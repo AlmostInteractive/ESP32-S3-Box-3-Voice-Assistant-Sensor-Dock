@@ -19,3 +19,9 @@
   - Radar sensor
     - screen saver
   - HA Text-to-Speech
+
+## Resources:
+
+https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome
+
+https://github.com/esphome/firmware/tree/main/wake-word-voice-assistant
