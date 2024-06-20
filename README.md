@@ -6,8 +6,10 @@
     - ~~ha/api connection~~
     - ~~ir rx status~~
     - voice status
-    - temperature monitor
-    - battery monitor
+      - what it heard
+      - what its response is
+    - ~~temperature monitor~~
+    - ~~battery monitor~~
   - Touch screen
     - red circle button
     - go to IR learning mode
