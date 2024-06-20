@@ -2,13 +2,14 @@
 
 ## Goals:
   - Status screen
-    - network connection
-    - ha/api connection
-    - ir rx status
+    - ~~network connection~~
+    - ~~ha/api connection~~
+    - ~~ir rx status~~
     - voice status
     - temperature monitor
     - battery monitor
   - Touch screen
+    - red circle button
     - go to IR learning mode
     - push to talk voice assistant
     - volume adjustment
