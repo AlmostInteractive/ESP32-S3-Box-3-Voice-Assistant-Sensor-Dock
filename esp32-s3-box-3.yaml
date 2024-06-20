@@ -1,9 +1,8 @@
-# https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock
-
 substitutions:
   name: esp32-s3box-3
   friendly_name: ESP32 S3 Box 3 Voice Assistant++
   micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
+  allowed_characters: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
 
 esphome:
   name: ${name}
@@ -189,18 +188,60 @@ remote_transmitter:
   carrier_duty_percent: 50%
   rmt_channel: 0
 
+sensor:
+  - platform: aht10 
+    i2c_id: bus_b
+    variant: AHT20
+    temperature:
+      name: "Temperature"
+      id: s3temp
+    humidity:
+      name: "Humidity"
+    update_interval: 60s
+
+  - platform: adc
+    pin: GPIO10
+    name: "Battery voltage"
+    id: battery_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    device_class: "voltage"
+    entity_category: "diagnostic"
+    disabled_by_default: true
+    update_interval: 30s
+    attenuation: auto
+    filters:
+      - multiply: 4.11
+
+  - platform: copy
+    id: battery_percent
+    source_id: battery_voltage
+    name: "Battery level"
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: "battery"
+    entity_category: "diagnostic"
+    filters:
+      - lambda: return (x - 2.7) / (4.2 - 2.7) * 100;
+      - clamp:
+          min_value: 0
+          max_value: 100
+
 font:
   - file: "gfonts://Roboto@500"
     id: font_small
     size: 14
+    glyphs: ${allowed_characters}
   - file: "gfonts://Roboto@500"
     id: font_medium
     size: 24
+    glyphs: ${allowed_characters}
   - file: "gfonts://Roboto@500"
     id: font_large
     size: 40
+    glyphs: ${allowed_characters}
   - file: "https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome/raw/main/fonts/materialdesignicons-webfont.ttf"
-    id: icon_font_small
+    id: font_icon_small
     size: 45
     glyphs: [
       "\U000F0079",#battery 100%
@@ -232,6 +273,8 @@ font:
       "\U000F075A",#music
       "\U000F0A19",#toggle off
       "\U000F0521",#toggle on
+      "\U000F032E",#led-variant-off
+      "\U000F0330",#led-variant-outline
       ]
 
 image:
@@ -357,18 +400,79 @@ display:
         lambda: |-
           it.fill(Color::BLACK);
           it.image((it.get_width() / 2), (it.get_height() / 2), id(loading_img), ImageAlign::CENTER);
+
       - id: status_page
         lambda: |-
-          int x = 20;
           int y = 0;
+          int x = 15;
+          int xinc = 65;
 
-          it.fill(id(black));
+          it.fill(Color::BLACK);
           it.print((it.get_width() / 2), y, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
-          y += 40;
-          if (api::global_api_server->is_connected()) { it.print(x, y += 20, id(font_small), white, "wifi connected"); }
-          else                            { it.print(x, y += 20, id(font_small), red, "wifi disconnected"); }
-          if (network::is_connected())  { it.print(x, y += 20, id(font_small), white, "api connected"); }
-          else                            { it.print(x, y += 20, id(font_small), red, "api disconnected"); }
-          if (id(enable_ir_rx).state == true) { it.print(x, y += 20, id(font_small), green, "ir rx enabled"); }
-          else                                { it.print(x, y += 20, id(font_small), white, "ir rx disabled"); }
+          y += 42;
+
+          if (api::global_api_server->is_connected()) {
+            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
+          } else {
+            it.print(x, y, id(font_icon_small), red, "\U000F087B");
+          }
+          x += xinc;
+
+          if (network::is_connected()) {
+            it.print(x, y, id(font_icon_small), lime, "\U000F16BD");
+          } else {
+            it.print(x, y, id(font_icon_small), red, "\U000F16BC");
+          }
+          x += xinc;
+
+          x += 3; // oddly spaced icon
+          if (id(battery_voltage).has_state ()) {
+              if (id(battery_voltage).state <= 2.7) {
+                  // Replace battery, less than 10%
+                  it.print(x, y, id(font_icon_small), "\U000F10CD");
+              } else if (id(battery_percent).state >= 98) {
+                  // "\U000F0079" # mdi-battery
+                  it.print(x, y, id(font_icon_small), green, "\U000F0079");
+              } else if (id(battery_percent).state >= 90) {
+                  // "\U000F0082" # mdi-battery-90
+                  it.print(x, y, id(font_icon_small), green, "\U000F0082");
+              } else if (id(battery_percent).state >= 80) {
+                  // "\U000F0081" # mdi-battery-80
+                  it.print(x, y, id(font_icon_small), green, "\U000F0081");
+              } else if (id(battery_percent).state >= 70) {
+                  // "\U000F0080" # mdi-battery-70
+                  it.print(x, y, id(font_icon_small), green, "\U000F0080");
+              } else if (id(battery_percent).state >= 60) {
+                  // "\U000F007F" # mdi-battery-60
+                  it.print(x, y, id(font_icon_small), green, "\U000F007F");
+              } else if (id(battery_percent).state >= 50) {
+                  // "\U000F007E" # mdi-battery-50
+                  it.print(x, y, id(font_icon_small), amber, "\U000F007E");
+              } else if (id(battery_percent).state >= 40) {
+                  // "\U000F007D" # mdi-battery-40
+                  it.print(x, y, id(font_icon_small), amber, "\U000F007D");
+              } else if (id(battery_percent).state >= 30) {
+                  // "\U000F007C" # mdi-battery-30
+                  it.print(x, y, id(font_icon_small), red, "\U000F007C");
+              } else if (id(battery_percent).state >= 20) {
+                  // "\U000F007B" # mdi-battery-20
+                  it.print(x, y, id(font_icon_small), red, "\U000F007B");
+              } else if (id(battery_percent).state >= 10) {
+                  // "\U000F007A" # mdi-battery-10
+                  it.print(x, y, id(font_icon_small), red, "\U000F007A");
+              }
+          }
+          x += xinc;
+
+          if (id(enable_ir_rx).state) {
+            it.print(x, y, id(font_icon_small), light_blue, "\U000F032E");
+          } else {
+            it.print(x, y, id(font_icon_small), blue_drk, "\U000F032E");
+          }
+          x += xinc;
+          
+          x -= 10; // oddly spaced icon
+          it.print(x, y, id(font_icon_small), blue, "\U000F050F");
+          it.printf(x + 24, y + 42, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
+          it.printf(x + 22, y + 40, id(font_small), white, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
 
