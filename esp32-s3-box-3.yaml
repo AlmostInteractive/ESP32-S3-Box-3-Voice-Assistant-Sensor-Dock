@@ -1,0 +1,374 @@
+# https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock
+
+substitutions:
+  name: esp32-s3box-3
+  friendly_name: ESP32 S3 Box 3 Voice Assistant++
+  micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  platformio_options:
+    board_build.flash_mode: dio
+  on_boot:
+    priority: 600
+    then:
+      - light.turn_on: 
+          id: led
+          brightness: 100%
+      - display.page.show: loading_page
+      - component.update: s3_box_lcd
+  project:
+    name: "VoiceAsstantSensorDock.s3box"
+    version: "0.0.1"
+
+esp32:
+  board: esp32s3box
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+      CONFIG_AUDIO_BOARD_CUSTOM: "y"
+      CONFIG_ESP32_S3_BOX_3_BOARD: "y"
+    components:
+      - name: esp32_s3_box_3_board
+        source: github://jesserockz/esp32-s3-box-3-board@main
+        refresh: 0s
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/gnumpi/esphome_audio
+      ref: dev-next
+    components: [ adf_pipeline, i2s_audio ]
+    refresh: 0s  
+ 
+psram:
+  mode: octal
+  speed: 80MHz
+
+ota:
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG
+
+api:
+  id: my_api
+  on_client_connected:
+    - component.update: s3_box_lcd
+  on_client_disconnected:
+    - component.update: s3_box_lcd
+
+wifi:
+  ap:
+    ssid: ${name}
+    password: s3box123
+  on_connect:
+    - script.execute:
+        id: change_app_state
+        next_state: 1
+  on_disconnect:
+    - component.update: s3_box_lcd
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+output:
+  - platform: ledc
+    pin: GPIO47
+    id: backlight_output
+
+light:
+  - platform: monochromatic
+    id: led
+    name: LCD Backlight
+    entity_category: config
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 500ms
+
+spi:
+  clk_pin: 7
+  mosi_pin: 6
+
+i2c:
+  - id: bus_a
+    sda: GPIO08
+    scl: GPIO18
+    scan: false
+    sda_pullup_enabled: true
+    scl_pullup_enabled: true
+    frequency: 100kHz
+
+  - sda: GPIO41
+    scl: GPIO40
+    scan: false
+    sda_pullup_enabled: true
+    scl_pullup_enabled: true
+    frequency: 50kHz
+    id: bus_b
+
+i2s_audio:
+  - id: i2s_shared
+    i2s_lrclk_pin: GPIO45
+    i2s_bclk_pin: GPIO17
+    i2s_mclk_pin: GPIO2
+    access_mode: duplex
+
+adf_pipeline:
+  - platform: i2s_audio
+    type: audio_out
+    id: adf_i2s_out
+    i2s_audio_id: i2s_shared
+    i2s_dout_pin: GPIO15
+    adf_alc: false
+    dac:
+      i2c_id: bus_a
+      model: es8311
+      address: 0x18
+      enable_pin: GPIO46
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    fixed_settings: true
+
+  - platform: i2s_audio
+    type: audio_in
+    id: adf_i2s_in
+    i2s_audio_id: i2s_shared
+    i2s_din_pin: GPIO16
+    pdm: false
+    adc:
+      i2c_id: bus_a
+      model: es7210
+      address: 0x40
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    fixed_settings: true
+
+touchscreen:
+  platform: gt911
+  i2c_id: bus_a
+  id: gt911_touchscreen
+  interrupt_pin: GPIO3
+
+switch:
+  - platform: gpio
+    id: enable_ir_rx
+    name: IR Receiver
+    pin:
+      number: GPIO44
+      inverted: true
+  - platform: template
+    name: Mute
+    id: mute_switch
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+remote_receiver:
+  id: ir_rx
+  pin: 
+    number: 38
+    inverted: true
+  dump: all
+  rmt_channel: 4
+  memory_blocks: 4
+  on_pronto:
+    then:
+      - component.update: s3_box_lcd
+  
+remote_transmitter:
+  id: ir_tx
+  pin: 
+    number: 39
+    inverted: false
+  carrier_duty_percent: 50%
+  rmt_channel: 0
+
+font:
+  - file: "gfonts://Roboto@500"
+    id: font_small
+    size: 14
+  - file: "gfonts://Roboto@500"
+    id: font_medium
+    size: 24
+  - file: "gfonts://Roboto@500"
+    id: font_large
+    size: 40
+  - file: "https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome/raw/main/fonts/materialdesignicons-webfont.ttf"
+    id: icon_font_small
+    size: 45
+    glyphs: [
+      "\U000F0079",#battery 100%
+      "\U000F0082",#battery 90%
+      "\U000F0081",#battery 80%
+      "\U000F0080",#battery 70%
+      "\U000F007F",#battery 60%
+      "\U000F007E",#battery 50%
+      "\U000F007D",#battery 40%
+      "\U000F007C",#battery 30%
+      "\U000F007B",#battery 20%
+      "\U000F007A",#battery 10%
+      "\U000F10CD",#battery warning
+      "\U000F050F",#temp sensor
+      "\U000F024A",#garden/flower
+      "\U000F16BD",#wifi connected
+      "\U000F16BC",#wifidisconnected
+      "\U000F07D0",#api connected
+      "\U000F12A8",#touch button
+      "\U000F0EBA",#stats
+      "\U000F087B",#api disconnected
+      "\U000F0B6C",#car
+      "\U000F057E",#speaker on
+      "\U000F0581",#speaker off
+      "\U000F0493",#settings cog
+      "\U000F1C6F",#info
+      "\U000F06E8",#light bulb illuminated
+      "\U000F0335",#light bulb off
+      "\U000F075A",#music
+      "\U000F0A19",#toggle off
+      "\U000F0521",#toggle on
+      ]
+
+image:
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/error.png"
+    id: error_img
+    resize: 320x240
+    type: RGB24
+    use_transparency: true
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/idle.png"
+    id: idle_img
+    resize: 320x240
+    type: RGB24
+    use_transparency: true
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/listening.png"
+    id: listening_img
+    resize: 320x240
+    type: RGB24
+    use_transparency: true
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/thinking.png"
+    id: thinking_img
+    resize: 320x240
+    type: RGB24
+    use_transparency: true
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/replying.png"
+    id: replying_img
+    resize: 320x240
+    type: RGB24
+    use_transparency: true
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/loading.png"
+    id: loading_img
+    resize: 320x240
+    type: RGB24
+    use_transparency: true
+
+color:
+  - id: green
+    hex: '75D15F'
+  - id: red
+    hex: 'FF3131'
+  - id: blue
+    hex: '47B7E9'
+  - id: blue_drk
+    hex: '085296'
+  - id: amber
+    hex: 'FBAB35'
+  - id: lime
+    hex: '20FC30'
+  - id: pink
+    hex: 'D92BBC'
+  - id: yellow
+    hex: 'FFC000'
+  - id: black
+    hex: '000000'
+  - id: white
+    hex: 'ffffff'
+  - id: purple
+    hex: '73264D'
+  - id: light_blue
+    hex: 'CFE2F3'
+
+globals:
+  # saved to flash
+  # saved in ram
+  - id: app_state
+    type: int
+    restore_value: no
+    initial_value: '0'    # 0 = Loading, 1 = Status, 2 = IR Learning, 3 = IR Buttons
+
+script:
+  - id: change_app_state
+    parameters:
+      next_state: int
+    then:
+      - lambda: |-
+          id(app_state) = next_state;
+          switch(next_state) {
+            case 0: // Loading
+              id(s3_box_lcd).show_page(id(loading_page));
+              break;
+            case 1: // Status
+              id(s3_box_lcd).show_page(id(status_page));
+              break;
+          }
+      - component.update: s3_box_lcd
+
+button:
+  - platform: restart
+    id: reboot
+    name: "Reboot"
+
+binary_sensor:
+  # top left hand physical button
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    name: Top Left Button
+    entity_category: diagnostic
+    on_press:
+      - light.toggle: led
+  # red circle home button
+  - platform: gt911
+    name: "Home"
+    index: 0
+    on_press:
+      - logger.log:
+          format: "Red circle pressed"
+
+display:
+  - platform: ili9xxx
+    id: s3_box_lcd
+    model: S3BOX
+    data_rate: 40MHz
+    cs_pin: 5
+    dc_pin: 4
+    reset_pin:
+      number: 48
+      inverted: true
+    update_interval: never
+    pages:
+      - id: loading_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(loading_img), ImageAlign::CENTER);
+      - id: status_page
+        lambda: |-
+          int x = 20;
+          int y = 0;
+
+          it.fill(id(black));
+          it.print((it.get_width() / 2), y, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
+          y += 40;
+          if (api::global_api_server->is_connected()) { it.print(x, y += 20, id(font_small), white, "wifi connected"); }
+          else                            { it.print(x, y += 20, id(font_small), red, "wifi disconnected"); }
+          if (network::is_connected())  { it.print(x, y += 20, id(font_small), white, "api connected"); }
+          else                            { it.print(x, y += 20, id(font_small), red, "api disconnected"); }
+          if (id(enable_ir_rx).state == true) { it.print(x, y += 20, id(font_small), green, "ir rx enabled"); }
+          else                                { it.print(x, y += 20, id(font_small), white, "ir rx disabled"); }
+
