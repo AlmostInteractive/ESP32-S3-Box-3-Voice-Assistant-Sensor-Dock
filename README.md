@@ -12,13 +12,14 @@
     - ~~battery monitor~~
   - Touch screen
     - red circle button
-    - go to IR learning mode
+    - ~~go to IR learning mode~~
     - push to talk voice assistant
     - volume adjustment
     - multiple virtual IR blast buttons
   - Working voice assistant with wake word
   - IR learning
-    - learn multiple buttons
+    - ~~learn multiple buttons~~
+    - save to and load from flash
   - Radar sensor
     - screen saver
   - HA Text-to-Speech
