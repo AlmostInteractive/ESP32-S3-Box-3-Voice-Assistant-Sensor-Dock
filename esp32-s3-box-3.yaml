@@ -70,9 +70,11 @@ wifi:
   on_connect:
     - script.execute:
         id: initialize
+    - script.wait:
+        id: initialize
     - script.execute:
         id: change_app_state
-        next_state: 2 #TODO: set this to 1
+        next_state: 1
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -328,8 +330,8 @@ color:
 
 globals:
   # saved to flash
-  - id: mem_ir_memory_codes_csv
-    type: std::string
+  - id: mem_ir_code_1
+    type: int[256]
     restore_value: true
   # saved in ram
   - id: app_state
@@ -372,33 +374,9 @@ script:
       - lambda: |-
           ESP_LOGD("initialize", "top of the lambda");
           id(ir_memory_button_codes).resize(4, "");
-
-          const std::string str = id(mem_ir_memory_codes_csv);
-          ESP_LOGD("initialize", str.c_str());
-          std::vector<std::string> tokens;
-          std::string token;
-          char delimiter = ',';
-    
-          for (char ch : str) {
-              if (ch == delimiter) {
-                  if (!token.empty()) {
-                      tokens.push_back(token);
-                      token.clear();
-                  }
-              } else {
-                  token += ch;
-              }
-          }
-          // Add the last token if not empty
-          if (!token.empty()) {
-              tokens.push_back(token);
-          }
-
-          int len = (tokens.size() > 4) ? 4 : tokens.size();
-          for (int i = 0; i < len; i++) {
-              ESP_LOGD("initialize", tokens[i].c_str());
-              id(ir_memory_button_codes)[i] = tokens[i];
-          }
+          int len = id(mem_ir_code_1)[0];
+          int* data = id(mem_ir_code_1) + 1;
+          ESP_LOGD("initialize", "Found length %d", len);
   - id: change_app_state
     parameters:
       next_state: int
@@ -417,13 +395,67 @@ script:
               break;
           }
       - component.update: s3_box_lcd
-  - id: save_ir_buttons
+  - id: save_ir_button
+    parameters:
+      buttonIndex: int
+      hexString: std::string
     then:
       - lambda: |-
-          const std::vector<std::string>& btns = id(ir_memory_button_codes);
-          std::string csv = btns[0] + "\",\"" + btns[1] + "\",\"" + btns[2] + "\",\"" + btns[3];
-          ESP_LOGD("save_ir_buttons", csv.c_str());
-          id(mem_ir_memory_codes_csv) = csv;
+          int arrayIndex = 1; // Start from 1 because the first element will store the count
+          int intValue = 0;
+          int hexDigitsInInt = 0;
+          int* outputArray;
+          
+          switch(buttonIndex) {
+            case 0:
+              outputArray = id(mem_ir_code_1);
+              break;
+            default:
+              ESP_LOGE("save_ir_button", "Invalid button index: %d", buttonIndex);
+              return;
+          }
+           
+
+          for (char c : hexString) {
+              if (c == ' ') {
+                  if (hexDigitsInInt > 0) {
+                      // Store the current intValue and reset for the next hex value
+                      if (arrayIndex < 512) {
+                          outputArray[arrayIndex++] = intValue;
+                      }
+                      intValue = 0;
+                      hexDigitsInInt = 0;
+                  }
+              } else {
+                  intValue <<= 4; // Shift left by 4 bits to make space for the next hex digit
+                  if (c >= '0' && c <= '9') {
+                      intValue |= (c - '0');
+                  } else if (c >= 'A' && c <= 'F') {
+                      intValue |= (10 + c - 'A');
+                  } else if (c >= 'a' && c <= 'f') {
+                      intValue |= (10 + c - 'a');
+                  }
+                  hexDigitsInInt++;
+                  
+                  if (hexDigitsInInt == 8) {
+                      if (arrayIndex < 512) {
+                          outputArray[arrayIndex++] = intValue;
+                      }
+                      intValue = 0;
+                      hexDigitsInInt = 0;
+                  }
+              }
+          }
+
+          // Handle the last hex value if there is no trailing space
+          if (hexDigitsInInt > 0 && arrayIndex < 512) {
+              outputArray[arrayIndex++] = intValue;
+          }
+
+          // Store the number of values saved into the first element of the array
+          outputArray[0] = arrayIndex - 1; // Minus 1 because arrayIndex starts from 1
+          ESP_LOGD("save_ir_button", "Saved %d values for %d", arrayIndex - 1, buttonIndex);
+          global_preferences->sync();
 
 button:
   - platform: restart
@@ -675,7 +707,7 @@ interval:
                           id(ir_memory_button_codes)[id(ir_memory_button_selected)] = longestString;
                           ESP_LOGD("algorithm", longestString.c_str());
                           
-                          id(save_ir_buttons).execute();
+                          id(save_ir_button).execute(id(ir_memory_button_selected), longestString);
 
                           id(ir_learning_state) = 0;
                           id(ir_memory_button_selected) = -1;
@@ -1000,8 +1032,8 @@ display:
           
           x -= 10; // oddly spaced icon
           it.print(x, y, id(font_icon_small), blue, "\U000F050F");
-          it.printf(x + 24, y + 42, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
-          it.printf(x + 22, y + 40, id(font_small), white, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
+          it.printf(x + 22, y + 41, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
+          it.printf(x + 23, y + 41, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
 
       - id: ir_learn_page
         lambda: |-
