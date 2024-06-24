@@ -457,15 +457,18 @@ script:
             case 0:
               outputArray = id(mem_ir_code_1);
               break;
+            case 1:
+              outputArray = id(mem_ir_code_2);
+              break;
+            case 2:
+              outputArray = id(mem_ir_code_3);
+              break;
+            case 3:
+              outputArray = id(mem_ir_code_4);
+              break;
             default:
               ESP_LOGE("save_ir_button", "Invalid button index: %d", buttonIndex);
               return;
-          }
-
-          // only an even number of codes
-          int numSpaces = std::count(hexString.begin(), hexString.end(), ' ');
-          if (hexString.size() > 5 && numSpaces % 2 == 0) {
-            hexString.resize(hexString.size() - 5);
           }
 
           for (char c : hexString) {
@@ -793,11 +796,20 @@ interval:
                               }
                           }
                           // # ----- end algorithm --------------------
+
+                          // only an even number of codes
+                          int numSpaces = std::count(longestString.begin(), longestString.end(), ' ');
+                          if (longestString.size() > 5 && numSpaces % 2 == 0) {
+                            longestString.resize(longestString.size() - 5);
+                          }
+
                           id(ir_memory_button_codes)[id(ir_memory_button_selected)] = longestString;
+                          
                           ESP_LOGD("algorithm", longestString.c_str());
                           
                           id(save_ir_button).execute(id(ir_memory_button_selected), longestString);
 
+                          id(nav_lock) = false;
                           id(ir_learning_state) = 0;
                           id(ir_memory_button_selected) = -1;
                           id(ir_memory_recorded_codes).clear();
