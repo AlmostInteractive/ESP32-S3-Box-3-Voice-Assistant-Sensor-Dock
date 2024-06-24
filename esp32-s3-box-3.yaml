@@ -162,11 +162,18 @@ touchscreen:
 
 switch:
   - platform: gpio
-    id: enable_ir_rx
-    name: "IR Receiver"
+    id: enable_ir
+    name: "IR Power"
     pin:
       number: GPIO44
       inverted: true
+    restore_mode: ALWAYS_ON
+    on_turn_off: 
+      then:
+        - component.update: s3_box_lcd
+    on_turn_on: 
+      then:
+        - component.update: s3_box_lcd
   - platform: template
     id: mute_switch
     optimistic: true
@@ -714,7 +721,6 @@ binary_sensor:
               - lambda: 'return id(app_state) == 2 && id(ir_learning_state) != 0;'
             then:
               - lambda: |-
-                  id(enable_ir_rx).turn_off();
                   id(ir_learning_state) = 0;
                   id(ir_learning_step) = 0;
                   id(nav_lock) = false;
@@ -754,7 +760,6 @@ interval:
                   case 2:
                     switch (id(ir_learning_step)) {
                       case 0:
-                        id(enable_ir_rx).turn_on();
                         id(ir_memory_last_received) = 0;
                         id(ir_memory_recording_codes).clear();
                         id(ir_learning_step)++;
@@ -762,7 +767,6 @@ interval:
                       case 1:
                         int lastReceived = id(ir_memory_last_received);
                         if (lastReceived > 0 && (id(ha_time).now().timestamp - lastReceived) > 1) {
-                          id(enable_ir_rx).turn_off();
                           id(ir_learning_step) = 0;
 
                           std::vector<std::string> codes(id(ir_memory_recording_codes));
@@ -1124,7 +1128,7 @@ display:
           }
           x += xinc;
 
-          if (id(enable_ir_rx).state) {
+          if (id(enable_ir).state) {
             it.print(x, y, id(font_icon_small), amber, "\U000F0330");
           } else {
             it.print(x, y, id(font_icon_small), blue_drk, "\U000F032E");
@@ -1176,7 +1180,7 @@ display:
             y += 15;
             it.print(x, y, id(font_small), white, "press the button you want to record.");
             y += 15;
-            if (id(enable_ir_rx).state) {
+            if (id(enable_ir).state) {
               it.print(320 / 2, y, id(font_icon_small), amber, TextAlign::TOP_CENTER, "\U000F0330");
             } else {
               it.print(320 / 2, y, id(font_icon_small), blue_drk, TextAlign::TOP_CENTER, "\U000F032E");
