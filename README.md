@@ -19,7 +19,7 @@
   - Working voice assistant with wake word
   - IR learning
     - ~~learn multiple buttons~~
-    - save to and load from flash
+    - ~~save to and load from flash~~
   - Radar sensor
     - screen saver
   - HA Text-to-Speech
