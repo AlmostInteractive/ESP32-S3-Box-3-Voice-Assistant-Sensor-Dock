@@ -74,7 +74,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        next_state: 1
+        next_state: 3
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -353,11 +353,15 @@ globals:
   - id: app_state
     type: int
     restore_value: false
-    initial_value: '0'    # 0 = Loading, 1 = Status, 2 = IR Learning, 3 = IR Buttons
+    initial_value: '0'    # 0 = Loading, 1 = Status, 2 = IR Learning, 3 = IR Blast
   - id: nav_lock
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: num_pages
+    type: int
+    restore_value: false
+    initial_value: '4'
   - id: ir_memory_button_selected
     type: int
     restore_value: false
@@ -437,7 +441,7 @@ script:
     then:
       - lambda: |-
           id(app_state) = next_state;
-          switch(next_state) {
+          switch (next_state) {
             case 0: // Loading
               id(s3_box_lcd).show_page(id(loading_page));
               break;
@@ -447,6 +451,11 @@ script:
             case 2: // IR Learning page
               id(s3_box_lcd).show_page(id(ir_learn_page));
               break;
+            case 3: // IR Learning page
+              id(s3_box_lcd).show_page(id(ir_blast_page));
+              break;
+            default:
+              ESP_LOGE("change_app_state", "Unknown state: %d", next_state);
           }
       - component.update: s3_box_lcd
   - id: save_ir_button
@@ -612,7 +621,7 @@ binary_sensor:
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) - 1) % 3; return next ? next : 2;'
+                  next_state: !lambda 'int next = (id(app_state) - 1) % id(num_pages); return next ? next : 2;'
   # Touchscreen next page
   - platform: touchscreen
     id: ts_next_button
@@ -629,7 +638,7 @@ binary_sensor:
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) + 1) % 3; return next ? next : 1;'
+                  next_state: !lambda 'int next = (id(app_state) + 1) % id(num_pages); return next ? next : 1;'
   # Touchscreen ir memory button 1
   - platform: touchscreen
     id: ts_ir_memory_1_button
@@ -642,7 +651,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
+              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 0;
@@ -661,7 +670,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
+              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 1;
@@ -680,7 +689,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
+              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 2;
@@ -699,7 +708,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
+              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 3;
@@ -728,6 +737,23 @@ binary_sensor:
                   id(ir_memory_recorded_codes).clear();
                   id(ir_memory_recording_codes).clear();
               - component.update: s3_box_lcd
+  # Touchscreen ir blast button 1
+  - platform: touchscreen
+    id: ts_ir_blast_1_button
+    internal: true
+    x_min: 40
+    x_max: 88
+    y_min: 66
+    y_max: 114
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: 'return id(app_state) == 3 && id(enable_ir).state;'
+            then:
+              - script.execute: 
+                  id: send_ir_code
+                  buttonIndex: 0                  
 
 interval:
   - interval: 1s
@@ -1072,7 +1098,7 @@ display:
             it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
           }
 
-          it.print((320 / 2), y, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
+          it.print((320 / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
           y += 42;
 
           if (api::global_api_server->is_connected()) {
@@ -1148,13 +1174,18 @@ display:
           int btnRadius = 24;
 
           it.fill(Color::BLACK);
-          it.print((it.get_width() / 2), y, id(font_large), yellow, TextAlign::TOP_CENTER, "- IR Learning -");
+          it.print((it.get_width() / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- IR Learning -");
           y += 46;
 
           // # print nav buttons
           if (!id(nav_lock)) {
             it.print(5, (240 - 5), id(font_icon_large), TextAlign::BOTTOM_LEFT, "\U000F004F");
             it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
+          }
+
+          if (!id(enable_ir).state) {
+            it.print(320 / 2, 240 / 2, id(font_small), white, TextAlign::TOP_CENTER, "The IR must be powered to proceed");
+            return;
           }
 
           if (id(ir_memory_button_selected) == -1) {
@@ -1194,4 +1225,37 @@ display:
             y += 5;
             it.print(320 / 2, y, id(font_small), white, TextAlign::TOP_CENTER, "Cancel");
           }
+
+      - id: ir_blast_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          it.print((it.get_width() / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- IR Blast -");
+
+          // # print nav buttons
+          if (!id(nav_lock)) {
+            it.print(5, (240 - 5), id(font_icon_large), TextAlign::BOTTOM_LEFT, "\U000F004F");
+            it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
+          }
+
+          if (!id(enable_ir).state) {
+            it.print(320 / 2, 240 / 2, id(font_small), white, TextAlign::TOP_CENTER, "The IR must be powered to proceed");
+            return;
+          }
+
+          int xinc = 65; // # must be kept in sync with touchscreen buttons
+          int btnRadius = 24;
+
+          int x = 40;
+          int y = 66; // # must be kept in sync with touchscreen buttons
+          it.filled_circle(x + btnRadius, y + btnRadius, btnRadius, (id(ir_memory_button_codes)[0].length() > 0) ? light_blue : blue_drk);
+          it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "1");
+          x += xinc;
+          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[1].length() > 0) ? light_blue : blue_drk);
+          it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "2");
+          x += xinc;
+          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[2].length() > 0) ? light_blue : blue_drk);
+          it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "3");
+          x += xinc;
+          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[3].length() > 0) ? light_blue : blue_drk);
+          it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "4");
 
