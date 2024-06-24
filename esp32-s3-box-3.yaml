@@ -163,7 +163,7 @@ touchscreen:
 switch:
   - platform: gpio
     id: enable_ir_rx
-    name: IR Receiver
+    name: "IR Receiver"
     pin:
       number: GPIO44
       inverted: true
@@ -333,6 +333,15 @@ globals:
   - id: mem_ir_code_1
     type: int[256]
     restore_value: true
+  - id: mem_ir_code_2
+    type: int[256]
+    restore_value: true
+  - id: mem_ir_code_3
+    type: int[256]
+    restore_value: true
+  - id: mem_ir_code_4
+    type: int[256]
+    restore_value: true
   # saved in ram
   - id: app_state
     type: int
@@ -372,11 +381,49 @@ script:
   - id: initialize
     then:
       - lambda: |-
-          ESP_LOGD("initialize", "top of the lambda");
           id(ir_memory_button_codes).resize(4, "");
-          int len = id(mem_ir_code_1)[0];
-          int* data = id(mem_ir_code_1) + 1;
-          ESP_LOGD("initialize", "Found length %d", len);
+
+          int* codeArray;
+          int length;
+          std::string hexStr;
+          char buffer[5];
+          int* data;
+
+          for (int i = 0; i < 4; i++) {
+            switch (i) {
+              case 0:
+                codeArray = id(mem_ir_code_1);
+                break;
+              case 1:
+                codeArray = id(mem_ir_code_2);
+                break;
+              case 2:
+                codeArray = id(mem_ir_code_3);
+                break;
+              case 3:
+                codeArray = id(mem_ir_code_4);
+                break;
+            }
+          
+            length = codeArray[0];
+            ESP_LOGD("initialize", "Found length %d for code %d", length, i + 1);
+            if (length <= 0) {
+              continue;
+            }
+
+            hexStr.clear();
+            data = codeArray + 1;
+            for (int i = 0; i < length; i++) {
+              snprintf(buffer, 5, "%04X", data[i]);
+              hexStr += buffer;
+              if (i != length - 1) {
+                hexStr += " ";
+              }
+            }
+
+            id(ir_memory_button_codes)[i] = hexStr;
+            ESP_LOGD("initialize", "Recovered IR button %d: %s", i + 1, hexStr.c_str());
+          }
   - id: change_app_state
     parameters:
       next_state: int
@@ -406,7 +453,7 @@ script:
           int hexDigitsInInt = 0;
           int* outputArray;
           
-          switch(buttonIndex) {
+          switch (buttonIndex) {
             case 0:
               outputArray = id(mem_ir_code_1);
               break;
@@ -414,7 +461,12 @@ script:
               ESP_LOGE("save_ir_button", "Invalid button index: %d", buttonIndex);
               return;
           }
-           
+
+          // only an even number of codes
+          int numSpaces = std::count(hexString.begin(), hexString.end(), ' ');
+          if (hexString.size() > 5 && numSpaces % 2 == 0) {
+            hexString.resize(hexString.size() - 5);
+          }
 
           for (char c : hexString) {
               if (c == ' ') {
@@ -456,6 +508,28 @@ script:
           outputArray[0] = arrayIndex - 1; // Minus 1 because arrayIndex starts from 1
           ESP_LOGD("save_ir_button", "Saved %d values for %d", arrayIndex - 1, buttonIndex);
           global_preferences->sync();
+  - id: send_ir_code
+    parameters:
+      buttonIndex: int
+    then:
+      - if:
+          condition:
+            lambda: |-
+              const std::vector<std::string>& codes = id(ir_memory_button_codes);
+              if (codes.size() < buttonIndex) {
+                ESP_LOGE("send_ir_code", "Invalid button: %d", buttonIndex + 1);
+                return false;
+              }
+
+              const std::string& code = codes[buttonIndex];
+              if (code.length() == 0) {
+                ESP_LOGD("send_ir_code", "Button %d is empty", buttonIndex + 1);
+                return false;
+              }
+              return true;
+          then:
+            - remote_transmitter.transmit_pronto:
+                data: !lambda "return id(ir_memory_button_codes)[buttonIndex].c_str();"                
 
 button:
   - platform: restart
@@ -464,13 +538,35 @@ button:
   - platform: template
     id: ir_btn_1
     name: "IR Button 1"
-#    on_press:
-#      if:
-#        condition:
-#          - lambda: 'return id(ir_signal_data).length() > 0;'
-#        then:
-#          - remote_transmitter.transmit_pronto:
-#              data: !lambda "return id(ir_signal_data).c_str();"
+    on_press:
+      then:
+        - script.execute:
+            id: send_ir_code
+            buttonIndex: 0
+  - platform: template
+    id: ir_btn_2
+    name: "IR Button 2"
+    on_press:
+      then:
+        - script.execute:
+            id: send_ir_code
+            buttonIndex: 1
+  - platform: template
+    id: ir_btn_3
+    name: "IR Button 3"
+    on_press:
+      then:
+        - script.execute:
+            id: send_ir_code
+            buttonIndex: 2
+  - platform: template
+    id: ir_btn_4
+    name: "IR Button 4"
+    on_press:
+      then:
+        - script.execute:
+            id: send_ir_code
+            buttonIndex: 3
 
 binary_sensor:
   # top left hand physical button
@@ -538,12 +634,10 @@ binary_sensor:
             condition: 
               lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
             then:
-              - globals.set: 
-                  id: ir_memory_button_selected
-                  value: '0'
-              - globals.set: 
-                  id: ir_learning_state
-                  value: '1'
+              - lambda: |-
+                  id(ir_memory_button_selected) = 0;
+                  id(ir_learning_state) = 1;
+                  id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory button 2
   - platform: touchscreen
@@ -559,12 +653,10 @@ binary_sensor:
             condition: 
               lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
             then:
-              - globals.set: 
-                  id: ir_memory_button_selected
-                  value: '1'
-              - globals.set: 
-                  id: ir_learning_state
-                  value: '1'
+              - lambda: |-
+                  id(ir_memory_button_selected) = 1;
+                  id(ir_learning_state) = 1;
+                  id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory button 3
   - platform: touchscreen
@@ -580,12 +672,10 @@ binary_sensor:
             condition: 
               lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
             then:
-              - globals.set: 
-                  id: ir_memory_button_selected
-                  value: '2'
-              - globals.set: 
-                  id: ir_learning_state
-                  value: '1'
+              - lambda: |-
+                  id(ir_memory_button_selected) = 2;
+                  id(ir_learning_state) = 1;
+                  id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory button 4
   - platform: touchscreen
@@ -601,12 +691,10 @@ binary_sensor:
             condition: 
               lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0;'
             then:
-              - globals.set: 
-                  id: ir_memory_button_selected
-                  value: '3'
-              - globals.set: 
-                  id: ir_learning_state
-                  value: '1'
+              - lambda: |-
+                  id(ir_memory_button_selected) = 3;
+                  id(ir_learning_state) = 1;
+                  id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory cancel
   - platform: touchscreen
@@ -626,6 +714,7 @@ binary_sensor:
                   id(enable_ir_rx).turn_off();
                   id(ir_learning_state) = 0;
                   id(ir_learning_step) = 0;
+                  id(nav_lock) = false;
                   id(ir_memory_button_selected) = -1;
                   id(ir_memory_recorded_codes).clear();
                   id(ir_memory_recording_codes).clear();
