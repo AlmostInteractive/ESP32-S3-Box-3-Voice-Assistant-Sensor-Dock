@@ -20,8 +20,8 @@
   - IR learning
     - ~~learn multiple buttons~~
     - ~~save to and load from flash~~
-  - Radar sensor
-    - screen saver
+  - ~~Radar sensor~~
+    - ~~screen saver~~
   - HA Text-to-Speech
 
 ## Resources:
