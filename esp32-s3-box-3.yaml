@@ -74,7 +74,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        next_state: 3
+        next_state: 1
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -349,6 +349,10 @@ globals:
   - id: mem_ir_code_4
     type: int[256]
     restore_value: true
+  - id: mem_settings_screen_saver_delay
+    type: int
+    restore_value: true
+    initial_value: '30'
   # saved in ram
   - id: app_state
     type: int
@@ -387,6 +391,10 @@ globals:
   - id: ir_memory_recorded_codes
     type: std::vector<std::vector<std::string>>
     restore_value: false
+  - id: radar_last_seen
+    type: int
+    restore_value: false
+    initial_value: '-1'
 
 script:
   - id: initialize
@@ -605,6 +613,28 @@ binary_sensor:
     on_press:
       - logger.log:
           format: "Red circle pressed"
+  # radar  
+  - platform: gpio
+    id: radar_sensor
+    pin: GPIO21
+    disabled_by_default: false
+    name: "Presence Detection"
+    device_class: "occupancy"
+    on_press:
+      then:
+        - component.update: s3_box_lcd
+        - light.turn_on:
+            id: led
+            brightness: 100%
+        - lambda: 'id(radar_last_seen) = -1;'
+        - logger.log:
+            format: "radar pressed"
+    on_release:
+      then:
+        - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'
+        - logger.log:
+            format: "radar released"
+            
   # Touchscreen previous page
   - platform: touchscreen
     id: ts_prev_button
@@ -851,6 +881,13 @@ interval:
             - delay: 100ms
             - component.update: s3_box_lcd
 
+      - if:
+          condition: 
+            - lambda: 'return id(radar_last_seen) > 0 && (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay));'
+          then:
+            - light.turn_off:
+                id: led
+                transition_length: 2s
 remote_receiver:
   id: ir_rx
   pin: 
