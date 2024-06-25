@@ -231,6 +231,10 @@ font:
     id: font_large
     size: 40
     glyphs: ${allowed_characters}
+  - file: "gfonts://Roboto@500"
+    id: font_extra_large
+    size: 60
+    glyphs: [Z]
   - file: "https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome/raw/main/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_small
     size: 45
@@ -316,7 +320,9 @@ color:
     hex: 'FF3131'
   - id: blue
     hex: '47B7E9'
-  - id: blue_drk
+  - id: blue_light
+    hex: 'CFE2F3'
+  - id: blue_dark
     hex: '085296'
   - id: amber
     hex: 'FBAB35'
@@ -332,8 +338,8 @@ color:
     hex: 'ffffff'
   - id: purple
     hex: '73264D'
-  - id: light_blue
-    hex: 'CFE2F3'
+  - id: grey_dark
+    hex: '202020'
 
 globals:
   # saved to flash
@@ -357,7 +363,7 @@ globals:
   - id: app_state
     type: int
     restore_value: false
-    initial_value: '0'    # 0 = Loading, 1 = Status, 2 = IR Learning, 3 = IR Blast
+    initial_value: '0'    # 0 = Loading, 1 = Status, 2 = IR Learning, 3 = IR Blast, 4 = Voice Assistant, 5 = Settings, 6 = Screen Saver
   - id: nav_lock
     type: bool
     restore_value: false
@@ -365,7 +371,7 @@ globals:
   - id: num_pages
     type: int
     restore_value: false
-    initial_value: '4'
+    initial_value: '6'
   - id: ir_memory_button_selected
     type: int
     restore_value: false
@@ -456,11 +462,20 @@ script:
             case 1: // Status
               id(s3_box_lcd).show_page(id(status_page));
               break;
-            case 2: // IR Learning page
+            case 2: // IR Learning
               id(s3_box_lcd).show_page(id(ir_learn_page));
               break;
-            case 3: // IR Learning page
+            case 3: // IR Blast
               id(s3_box_lcd).show_page(id(ir_blast_page));
+              break;
+            case 4: // Voice Assistant 
+              id(s3_box_lcd).show_page(id(voice_assistant_page));
+              break;
+            case 5: // Settings
+              id(s3_box_lcd).show_page(id(settings_page));
+              break;
+            case 6: // Screen Saver
+              id(s3_box_lcd).show_page(id(screen_saver_page));
               break;
             default:
               ESP_LOGE("change_app_state", "Unknown state: %d", next_state);
@@ -622,19 +637,17 @@ binary_sensor:
     device_class: "occupancy"
     on_press:
       then:
-        - component.update: s3_box_lcd
-        - light.turn_on:
-            id: led
-            brightness: 100%
         - lambda: 'id(radar_last_seen) = -1;'
-        - logger.log:
-            format: "radar pressed"
+        - if:
+            condition:
+              - lambda: 'return id(app_state) == 6;'
+            then:
+              - script.execute: 
+                  id: change_app_state
+                  next_state: 1
     on_release:
       then:
-        - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'
-        - logger.log:
-            format: "radar released"
-            
+        - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
   # Touchscreen previous page
   - platform: touchscreen
     id: ts_prev_button
@@ -651,7 +664,7 @@ binary_sensor:
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) - 1) % id(num_pages); return next ? next : 2;'
+                  next_state: !lambda 'int next = (id(app_state) - 1) % id(num_pages); return next ? next : (id(num_pages) - 1);'
   # Touchscreen next page
   - platform: touchscreen
     id: ts_next_button
@@ -788,6 +801,7 @@ binary_sensor:
 interval:
   - interval: 1s
     then:
+      # IR learning loop
       - if:
           condition:
             - lambda: 'return id(app_state) == 2 && id(ir_learning_state) != 0;'
@@ -880,14 +894,20 @@ interval:
                 }
             - delay: 100ms
             - component.update: s3_box_lcd
-
+      # Screen saver activation
       - if:
           condition: 
             - lambda: 'return id(radar_last_seen) > 0 && (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay));'
           then:
-            - light.turn_off:
-                id: led
-                transition_length: 2s
+            - if:
+                condition:
+                  - lambda: 'return id(app_state) == 6;'
+                then:
+                  - component.update: s3_box_lcd
+                else:
+                - script.execute: 
+                    id: change_app_state
+                    next_state: 6
 remote_receiver:
   id: ir_rx
   pin: 
@@ -1192,9 +1212,9 @@ display:
           x += xinc;
 
           if (id(enable_ir).state) {
-            it.print(x, y, id(font_icon_small), amber, "\U000F0330");
+            it.print(x, y, id(font_icon_small), yellow, "\U000F0330");
           } else {
-            it.print(x, y, id(font_icon_small), blue_drk, "\U000F032E");
+            it.print(x, y, id(font_icon_small), blue_dark, "\U000F032E");
           }
           x += xinc;
           
@@ -1230,16 +1250,16 @@ display:
             it.print(x, y, id(font_small), white, "IR Memory Buttons:");
             x = 40;
             y = 66; // # must be kept in sync with touchscreen buttons
-            it.filled_circle(x + btnRadius, y + btnRadius, btnRadius, (id(ir_memory_button_codes)[0].length() > 0) ? light_blue : blue_drk);
+            it.filled_circle(x + btnRadius, y + btnRadius, btnRadius, (id(ir_memory_button_codes)[0].length() > 0) ? blue_light : blue_dark);
             it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "1");
             x += xinc;
-            it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[1].length() > 0) ? light_blue : blue_drk);
+            it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[1].length() > 0) ? blue_light : blue_dark);
             it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "2");
             x += xinc;
-            it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[2].length() > 0) ? light_blue : blue_drk);
+            it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[2].length() > 0) ? blue_light : blue_dark);
             it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "3");
             x += xinc;
-            it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[3].length() > 0) ? light_blue : blue_drk);
+            it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[3].length() > 0) ? blue_light : blue_dark);
             it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "4");
           } else {
             it.printf(x, y, id(font_small), white, "Recording IR Memory Button %d", id(ir_memory_button_selected) + 1);
@@ -1249,9 +1269,9 @@ display:
             it.print(x, y, id(font_small), white, "press the button you want to record.");
             y += 15;
             if (id(enable_ir).state) {
-              it.print(320 / 2, y, id(font_icon_small), amber, TextAlign::TOP_CENTER, "\U000F0330");
+              it.print(320 / 2, y, id(font_icon_small), yellow, TextAlign::TOP_CENTER, "\U000F0330");
             } else {
-              it.print(320 / 2, y, id(font_icon_small), blue_drk, TextAlign::TOP_CENTER, "\U000F032E");
+              it.print(320 / 2, y, id(font_icon_small), blue_dark, TextAlign::TOP_CENTER, "\U000F032E");
             }
             y += 45;
             it.printf(320 / 2, y, id(font_small), white, TextAlign::TOP_CENTER, "%d", id(ir_learning_state));
@@ -1284,15 +1304,60 @@ display:
 
           int x = 40;
           int y = 66; // # must be kept in sync with touchscreen buttons
-          it.filled_circle(x + btnRadius, y + btnRadius, btnRadius, (id(ir_memory_button_codes)[0].length() > 0) ? light_blue : blue_drk);
+          it.filled_circle(x + btnRadius, y + btnRadius, btnRadius, (id(ir_memory_button_codes)[0].length() > 0) ? blue_light : blue_dark);
           it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "1");
           x += xinc;
-          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[1].length() > 0) ? light_blue : blue_drk);
+          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[1].length() > 0) ? blue_light : blue_dark);
           it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "2");
           x += xinc;
-          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[2].length() > 0) ? light_blue : blue_drk);
+          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[2].length() > 0) ? blue_light : blue_dark);
           it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "3");
           x += xinc;
-          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[3].length() > 0) ? light_blue : blue_drk);
+          it.filled_circle(x + btnRadius , y + btnRadius , btnRadius, (id(ir_memory_button_codes)[3].length() > 0) ? blue_light : blue_dark);
           it.print(x + btnRadius , y + btnRadius , id(font_large), white, TextAlign::CENTER, "4");
 
+      - id: voice_assistant_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          it.print((it.get_width() / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- Voice Assistant -");
+
+          // # print nav buttons
+          if (!id(nav_lock)) {
+            it.print(5, (240 - 5), id(font_icon_large), TextAlign::BOTTOM_LEFT, "\U000F004F");
+            it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
+          }
+
+      - id: settings_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          it.print((it.get_width() / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- Settings -");
+
+          // # print nav buttons
+          if (!id(nav_lock)) {
+            it.print(5, (240 - 5), id(font_icon_large), TextAlign::BOTTOM_LEFT, "\U000F004F");
+            it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
+          }
+
+      - id: screen_saver_page
+        lambda: |-
+          std::string output;
+          switch (id(ha_time).now().timestamp % 10) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+              return;
+            case 4:
+            case 5:
+              output = "Z";
+              break;
+            case 6:
+            case 7:
+              output = "ZZ";
+              break;
+            case 8:
+            case 9:
+              output = "ZZZ";
+              break;
+          }
+          it.print(320 / 2 - 52, 240 / 2, id(font_extra_large), grey_dark, TextAlign::CENTER_LEFT, output.c_str());
