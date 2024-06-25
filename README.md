@@ -8,21 +8,25 @@
     - voice status
       - what it heard
       - what its response is
+    - push to talk voice assistant
     - ~~temperature monitor~~
     - ~~battery monitor~~
-  - Touch screen
-    - red circle button
+  - ~~Touch screen~~
+    - ~~red circle button~~
     - ~~go to IR learning mode~~
-    - push to talk voice assistant
-    - volume adjustment
-    - multiple virtual IR blast buttons
+    - ~~multiple virtual IR blast buttons~~
   - Working voice assistant with wake word
-  - IR learning
+  - ~~IR learning~~
     - ~~learn multiple buttons~~
     - ~~save to and load from flash~~
   - ~~Radar sensor~~
     - ~~screen saver~~
   - HA Text-to-Speech
+  - Settings Screen:
+    - volume adjustment
+    - screen saver time out
+    - VA TTS / beep / mute on wake word
+    - VA TTS / beep / mute after command
 
 ## Resources:
 
