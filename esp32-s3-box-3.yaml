@@ -3,7 +3,26 @@ substitutions:
   friendly_name: ESP32 S3 Box 3 Voice Assistant++
   micro_wake_word_model: okay_nabu  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
-  allowed_characters: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
+
+  # don't mess with these, used like global constants
+  ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
+
+  APP_STATE_LOADING: '0'
+  APP_STATE_STATUS: '1'
+  APP_STATE_IR_LEARNING: '2'
+  APP_STATE_IR_BLAST: '3'
+  APP_STATE_VA: '4'
+  APP_STATE_SETTINGS: '5'
+  APP_STATE_SCREEN_SAVER: '6'
+  NUM_PAGES: '6'
+
+  VA_STATE_IDLE: '1'
+  VA_STATE_LISTENING: '2'
+  VA_STATE_THINKING: '3'
+  VA_STATE_REPLYING: '4'
+  VA_STATE_NOT_READY: '10'
+  VA_STATE_ERROR: '11'
+  VA_STATE_MUTED: '12'
 
 esphome:
   name: ${name}
@@ -20,7 +39,7 @@ esphome:
       - component.update: s3_box_lcd
   project:
     name: "VoiceAsstantSensorDock.s3box"
-    version: "0.0.1"
+    version: "0.1.0"
 
 esp32:
   board: esp32s3box
@@ -56,6 +75,9 @@ ota:
 logger:
   hardware_uart: USB_SERIAL_JTAG
   level: DEBUG
+  logs:
+    sensor: WARN
+    binary_sensor: WARN
 
 api:
   id: my_api
@@ -75,7 +97,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        next_state: 1
+        next_state: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -354,25 +376,20 @@ number:
     step: 1
     min_value: 1
     max_value: 999999
-    on_value:
-      then:
-        - lambda: |-
-            int i = (int)x;
-            ESP_LOGD("number_lambda", "%d", i);
 
 font:
   - file: "gfonts://Roboto@500"
     id: font_small
     size: 14
-    glyphs: ${allowed_characters}
+    glyphs: ${ALLOWED_CHARACTERS}
   - file: "gfonts://Roboto@500"
     id: font_medium
     size: 24
-    glyphs: ${allowed_characters}
+    glyphs: ${ALLOWED_CHARACTERS}
   - file: "gfonts://Roboto@500"
     id: font_large
     size: 40
-    glyphs: ${allowed_characters}
+    glyphs: ${ALLOWED_CHARACTERS}
   - file: "gfonts://Roboto@500"
     id: font_extra_large
     size: 60
@@ -501,15 +518,11 @@ globals:
   - id: app_state
     type: int
     restore_value: false
-    initial_value: '0'    # 0 = Loading, 1 = Status, 2 = IR Learning, 3 = IR Blast, 4 = Voice Assistant, 5 = Settings, 6 = Screen Saver
+    initial_value: ${APP_STATE_LOADING}
   - id: nav_lock
     type: bool
     restore_value: false
     initial_value: 'false'
-  - id: num_pages
-    type: int
-    restore_value: false
-    initial_value: '6'
   - id: ir_memory_button_selected
     type: int
     restore_value: false
@@ -539,6 +552,10 @@ globals:
     type: int
     restore_value: false
     initial_value: '-1'
+  - id: va_state
+    type: int
+    restore_value: false
+    initial_value: ${VA_STATE_NOT_READY}
 
 script:
   - id: initialize
@@ -594,25 +611,25 @@ script:
       - lambda: |-
           id(app_state) = next_state;
           switch (next_state) {
-            case 0: // Loading
+            case ${APP_STATE_LOADING}:
               id(s3_box_lcd).show_page(id(loading_page));
               break;
-            case 1: // Status
+            case ${APP_STATE_STATUS}:
               id(s3_box_lcd).show_page(id(status_page));
               break;
-            case 2: // IR Learning
+            case ${APP_STATE_IR_LEARNING}:
               id(s3_box_lcd).show_page(id(ir_learn_page));
               break;
-            case 3: // IR Blast
+            case ${APP_STATE_IR_BLAST}:
               id(s3_box_lcd).show_page(id(ir_blast_page));
               break;
-            case 4: // Voice Assistant 
+            case ${APP_STATE_VA}:
               id(s3_box_lcd).show_page(id(voice_assistant_page));
               break;
-            case 5: // Settings
+            case ${APP_STATE_SETTINGS}:
               id(s3_box_lcd).show_page(id(settings_page));
               break;
-            case 6: // Screen Saver
+            case ${APP_STATE_SCREEN_SAVER}:
               id(s3_box_lcd).show_page(id(screen_saver_page));
               break;
             default:
@@ -778,11 +795,11 @@ binary_sensor:
         - lambda: 'id(radar_last_seen) = -1;'
         - if:
             condition:
-              - lambda: 'return id(app_state) == 6;'
+              - lambda: return id(app_state) == ${APP_STATE_SCREEN_SAVER};
             then:
               - script.execute: 
                   id: change_app_state
-                  next_state: 1
+                  next_state: ${APP_STATE_STATUS}
     on_release:
       then:
         - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
@@ -798,11 +815,11 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return !id(nav_lock) && id(app_state) != 0;'
+              lambda: return !id(nav_lock) && id(app_state) != ${APP_STATE_LOADING};
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) - 1) % id(num_pages); return next ? next : (id(num_pages) - 1);'
+                  next_state: !lambda 'int next = (id(app_state) - 1) % ${NUM_PAGES}; return next ? next : (${NUM_PAGES} - 1);'
   # Touchscreen next page
   - platform: touchscreen
     id: ts_next_button
@@ -815,11 +832,11 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return !id(nav_lock) && id(app_state) != 0;'
+              lambda: return !id(nav_lock) && id(app_state) != ${APP_STATE_LOADING};
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) + 1) % id(num_pages); return next ? next : 1;'
+                  next_state: !lambda 'int next = (id(app_state) + 1) % ${NUM_PAGES}; return next ? next : 1;'
   # Touchscreen ir memory button 1
   - platform: touchscreen
     id: ts_ir_memory_1_button
@@ -832,7 +849,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
+              lambda: return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 0 && id(enable_ir).state;
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 0;
@@ -851,7 +868,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
+              lambda: return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 0 && id(enable_ir).state;
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 1;
@@ -870,7 +887,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
+              lambda: return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 0 && id(enable_ir).state;
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 2;
@@ -889,7 +906,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 0 && id(enable_ir).state;'
+              lambda: return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 0 && id(enable_ir).state;
             then:
               - lambda: |-
                   id(ir_memory_button_selected) = 3;
@@ -908,7 +925,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              - lambda: 'return id(app_state) == 2 && id(ir_learning_state) != 0;'
+              - lambda: return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) != 0;
             then:
               - lambda: |-
                   id(ir_learning_state) = 0;
@@ -930,7 +947,7 @@ binary_sensor:
       then:
         - if:
             condition: 
-              lambda: 'return id(app_state) == 3 && id(enable_ir).state;'
+              lambda: return id(app_state) == ${APP_STATE_IR_BLAST} && id(enable_ir).state;
             then:
               - script.execute: 
                   id: send_ir_code
@@ -942,7 +959,7 @@ interval:
       # IR learning loop
       - if:
           condition:
-            - lambda: 'return id(app_state) == 2 && id(ir_learning_state) != 0;'
+            - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) != 0;'
           then:
             - lambda: |-
                 if (!id(ha_time).now().is_valid()) {
@@ -1039,13 +1056,13 @@ interval:
           then:
             - if:
                 condition:
-                  - lambda: 'return id(app_state) == 6;'
+                  - lambda: 'return id(app_state) == ${APP_STATE_SCREEN_SAVER};'
                 then:
                   - component.update: s3_box_lcd
                 else:
                 - script.execute: 
                     id: change_app_state
-                    next_state: 6
+                    next_state: ${APP_STATE_SCREEN_SAVER}
 
 remote_receiver:
   id: ir_rx
@@ -1059,7 +1076,7 @@ remote_receiver:
     then:
       - if:
           condition:
-            - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+            - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
           then:
             - lambda: |-
                 ESP_LOGD("remote_receiver", x.data.c_str());
@@ -1069,189 +1086,189 @@ remote_receiver:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_aeha:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_byronsx:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_canalsat:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_coolix:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_dish:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_dooya:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_drayton:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_jvc:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_keeloq:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_haier:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_lg:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_magiquest:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_midea:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_nec:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_nexa:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_panasonic:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_pioneer:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_rc5:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_rc6:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_rc_switch:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_roomba:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_samsung:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_samsung36:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_sony:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_toshiba_ac:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   on_mirage:
     then:
     - if:
         condition:
-          - lambda: 'return id(app_state) == 2 && id(ir_learning_state) == 2;'
+          - lambda: 'return id(app_state) == ${APP_STATE_IR_LEARNING} && id(ir_learning_state) == 2;'
         then:
           - lambda: 'id(ir_memory_last_received) = id(ha_time).now().timestamp;'
   
