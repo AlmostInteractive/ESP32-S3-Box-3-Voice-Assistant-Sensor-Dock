@@ -277,13 +277,13 @@ voice_assistant:
   on_stt_end:
     - lambda: ESP_LOGD("voice_assistant_on", "on_stt_end");
     - text_sensor.template.publish:
-        id: text_request
+        id: va_request
         state: !lambda return x;
     - component.update: s3_box_lcd
   on_tts_start:
     - lambda: ESP_LOGD("voice_assistant_on", "on_tts_start");
     - text_sensor.template.publish:
-        id: text_response
+        id: va_response
         state: !lambda return x;
     - script.execute:
         id: change_va_state
@@ -428,24 +428,11 @@ text_sensor:
       id: ip_addr
   - id: wakeword_location
     platform: template
-  - id: text_request
+  - id: va_request
     platform: template
-    on_value:
-      lambda: |-
-        if(id(text_request).state.length()>32) {
-          std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_request).state = (truncated+"...").c_str();
-        }
-  - id: text_response
+  - id: va_response
     platform: template
-    on_value:
-      lambda: |-
-        if(id(text_response).state.length()>32) {
-          std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_response).state = (truncated+"...").c_str();
-        }
+
 
 number:
   - id: mem_settings_screen_saver_delay
@@ -1604,6 +1591,16 @@ display:
               break;
           }
           it.printf(x, y, id(font_small), white, "Current state: %s", stateStr.c_str());
+
+          y += 15;
+          it.print(x, y, id(font_small), white, "Last request:");
+          y += 15;
+          it.printf(x, y, id(font_small), white, "%s", id(va_request).state.c_str());
+
+          y += 15;
+          it.print(x, y, id(font_small), white, "Last response:");
+          y += 15;
+          it.printf(x, y, id(font_small), white, "%s", id(va_response).state.c_str());
 
       - id: settings_page
         lambda: |-
