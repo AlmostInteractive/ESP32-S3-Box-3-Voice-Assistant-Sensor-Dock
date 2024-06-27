@@ -253,6 +253,12 @@ voice_assistant:
         nextState: ${VA_STATE_NOT_READY}
   on_wake_word_detected:
     - lambda: ESP_LOGD("voice_assistant_on", "on_wake_word_detected");
+    - text_sensor.template.publish:
+        id: va_request
+        state: ""
+    - text_sensor.template.publish:
+        id: va_response
+        state: ""
   on_listening:
     - lambda: ESP_LOGD("voice_assistant_on", "on_listening");
     - script.execute:
@@ -267,13 +273,20 @@ voice_assistant:
         nextState: ${VA_STATE_THINKING}
   on_error:
     - lambda: ESP_LOGD("voice_assistant_on", "on_error");
-    - script.execute:
-        id: change_va_state
-        nextState: ${VA_STATE_ERROR}
-    - delay: 1s
-    - script.execute:
-        id: change_va_state
-        nextState: ${VA_STATE_IDLE}
+    - if:
+        condition:
+          - lambda: return id(va_state) != ${VA_STATE_NOT_READY};
+        then:
+          - script.execute:
+              id: change_va_state
+              nextState: ${VA_STATE_ERROR}
+          - text_sensor.template.publish:
+              id: va_response
+              state: !lambda return message;
+          - delay: 3s
+          - script.execute:
+              id: change_va_state
+              nextState: ${VA_STATE_IDLE}
   on_stt_end:
     - lambda: ESP_LOGD("voice_assistant_on", "on_stt_end");
     - text_sensor.template.publish:
@@ -1592,15 +1605,19 @@ display:
           }
           it.printf(x, y, id(font_small), white, "Current state: %s", stateStr.c_str());
 
-          y += 15;
-          it.print(x, y, id(font_small), white, "Last request:");
-          y += 15;
-          it.printf(x, y, id(font_small), white, "%s", id(va_request).state.c_str());
+          if (id(va_request).state.length() > 0) {
+            y += 15;
+            it.print(x, y, id(font_small), white, "Last request:");
+            y += 15;
+            it.printf(x, y, id(font_small), white, "%s", id(va_request).state.c_str());
+          }
 
-          y += 15;
-          it.print(x, y, id(font_small), white, "Last response:");
-          y += 15;
-          it.printf(x, y, id(font_small), white, "%s", id(va_response).state.c_str());
+          if (id(va_response).state.length() > 0) {
+            y += 15;
+            it.print(x, y, id(font_small), white, "Last response:");
+            y += 15;
+            it.printf(x, y, id(font_small), white, "%s", id(va_response).state.c_str());
+          }
 
       - id: settings_page
         lambda: |-
