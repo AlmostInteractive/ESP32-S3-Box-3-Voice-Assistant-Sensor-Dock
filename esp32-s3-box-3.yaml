@@ -603,6 +603,9 @@ globals:
     type: int
     restore_value: false
     initial_value: ${APP_STATE_LOADING}
+  - id: wake_app_state
+    type: int
+    restore_value: false
   - id: nav_lock
     type: bool
     restore_value: false
@@ -888,9 +891,7 @@ binary_sensor:
             condition:
               - lambda: return id(app_state) == ${APP_STATE_SCREEN_SAVER};
             then:
-              - script.execute: 
-                  id: change_app_state
-                  nextState: ${APP_STATE_STATUS}
+              - lambda: id(change_app_state).execute(id(wake_app_state));
     on_release:
       then:
         - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
@@ -1143,7 +1144,10 @@ interval:
       # Screen saver activation
       - if:
           condition: 
-            - lambda: 'return id(radar_last_seen) > 0 && (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay).state);'
+            - lambda: |-
+                return id(app_state) != ${APP_STATE_LOADING} && 
+                  id(radar_last_seen) > 0 && 
+                  (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay).state);
           then:
             - if:
                 condition:
@@ -1151,9 +1155,10 @@ interval:
                 then:
                   - component.update: s3_box_lcd
                 else:
-                - script.execute: 
-                    id: change_app_state
-                    nextState: ${APP_STATE_SCREEN_SAVER}
+                  - lambda: id(wake_app_state) = id(app_state);
+                  - script.execute: 
+                      id: change_app_state
+                      nextState: ${APP_STATE_SCREEN_SAVER}
 
 remote_receiver:
   id: ir_rx
