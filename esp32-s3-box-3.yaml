@@ -6,6 +6,9 @@ substitutions:
 
   # don't mess with these, used like global constants
   ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
+  
+  VA_IN_HOME_ASSISTANT: "In Home Assistant"
+  VA_ON_DEVICE: "On device"
 
   APP_STATE_LOADING: '0'
   APP_STATE_STATUS: '1'
@@ -16,13 +19,13 @@ substitutions:
   APP_STATE_SCREEN_SAVER: '6'
   NUM_PAGES: '6'
 
-  VA_STATE_IDLE: '1'
-  VA_STATE_LISTENING: '2'
-  VA_STATE_THINKING: '3'
-  VA_STATE_REPLYING: '4'
-  VA_STATE_NOT_READY: '10'
-  VA_STATE_ERROR: '11'
-  VA_STATE_MUTED: '12'
+  VA_STATE_NOT_READY: '1'
+  VA_STATE_IDLE: '2'
+  VA_STATE_LISTENING: '3'
+  VA_STATE_THINKING: '4'
+  VA_STATE_REPLYING: '5'
+  VA_STATE_ERROR: '6'
+  VA_STATE_MUTED: '7'
 
 esphome:
   name: ${name}
@@ -78,6 +81,12 @@ logger:
   logs:
     sensor: WARN
     binary_sensor: WARN
+    esp-idf: WARN
+    esp_adf_pipeline: WARN
+    esp_audio_processors: WARN
+    esp_audio_sources: WARN
+    adf_media_player: WARN
+    adf_audio_element: WARN
 
 api:
   id: my_api
@@ -97,7 +106,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        next_state: ${APP_STATE_STATUS}
+        nextState: ${APP_STATE_VA}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -215,27 +224,115 @@ voice_assistant:
   noise_suppression_level: ${noise_suppression_level}
   auto_gain: 31dBFS
   volume_multiplier: 4.0
-  on_client_connected: #when Home Assistant has connected and is waiting for Voice Assistant commands
-    - logger.log:
-        format: "VA client connected"
-  on_client_disconnected: #when Home Assistant disconnects from the Voice Assistant
-    - logger.log:
-        format: "VA client disconnected"
+  on_client_connected:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_client_connected");
+    - if:
+        condition:
+          lambda: return id(wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
+        then:
+          - lambda: id(va).set_use_wake_word(true);
+          - voice_assistant.start_continuous
+        else:
+          - micro_wake_word.start
+    - script.execute:
+        id: change_va_state
+        nextState: ${VA_STATE_IDLE}
+    - lambda: id(va_state) = ${VA_STATE_IDLE};
+  on_client_disconnected:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_client_disconnected");
+    - if:
+        condition:
+          lambda: return id(wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
+        then:
+          - lambda: id(va).set_use_wake_word(false);
+        else:
+          - micro_wake_word.stop
+    - voice_assistant.stop
+    - script.execute:
+        id: change_va_state
+        nextState: ${VA_STATE_NOT_READY}
   on_wake_word_detected:
-    - logger.log:
-        format: "VA wake word detected"
-  on_listening: #when va mic starts listening
-    - logger.log:
-        format: "VA starts listening"
-  on_stt_vad_end: #voice activity detection ends speech-to-text processing
-    - logger.log:
-        format: "VA speech to text voice activity detection end"
-  on_tts_end: #when the voice assistant has finished text-to-speech
-    - logger.log:
-        format: "VA text to speech end"
-  on_end: #when the voice assistant is finished all tasks
-    - logger.log:
-        format: "VA all tasks end"
+    - lambda: ESP_LOGD("voice_assistant_on", "on_wake_word_detected");
+    - text_sensor.template.publish:
+        id: va_request
+        state: ""
+    - text_sensor.template.publish:
+        id: va_response
+        state: ""
+  on_listening:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_listening");
+    - script.execute:
+        id: change_va_state
+        nextState: ${VA_STATE_LISTENING}
+  on_stt_vad_start:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_stt_vad_start");
+  on_stt_vad_end:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_stt_vad_end");
+    - script.execute:
+        id: change_va_state
+        nextState: ${VA_STATE_THINKING}
+  on_error:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_error");
+    - if:
+        condition:
+          - lambda: return id(va_state) != ${VA_STATE_NOT_READY};
+        then:
+          - script.execute:
+              id: change_va_state
+              nextState: ${VA_STATE_ERROR}
+          - text_sensor.template.publish:
+              id: va_response
+              state: !lambda return message;
+          - delay: 3s
+          - script.execute:
+              id: change_va_state
+              nextState: ${VA_STATE_IDLE}
+  on_stt_end:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_stt_end");
+    - text_sensor.template.publish:
+        id: va_request
+        state: !lambda return x;
+    - component.update: s3_box_lcd
+  on_tts_start:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_tts_start");
+    - text_sensor.template.publish:
+        id: va_response
+        state: !lambda return x;
+    - script.execute:
+        id: change_va_state
+        nextState: ${VA_STATE_REPLYING}
+  on_end:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_end");
+    - if:
+        condition:
+          - lambda: return id(wake_word_engine_location).state == "${VA_ON_DEVICE}";
+        then:
+          - wait_until:
+              not:
+                voice_assistant.is_running
+          - micro_wake_word.start
+    - script.execute:
+        id: change_va_state
+        nextState: ${VA_STATE_IDLE}
+
+  on_intent_start:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_intent_start");
+  on_intent_end:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_intent_end");
+  on_start:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_start");
+  on_tts_end:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_tts_end");
+  on_idle:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_idle");
+  on_timer_started:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_timer_started");
+  on_timer_finished:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_timer_finished");
+  on_timer_cancelled:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_timer_cancelled");
+  on_timer_updated:
+    - lambda: ESP_LOGD("voice_assistant_on", "on_timer_updated");
 
 touchscreen:
   platform: gt911
@@ -270,13 +367,13 @@ select:
     optimistic: true
     restore_value: true
     options:
-      - In Home Assistant
-      - On device
-    initial_option: In Home Assistant
+      - ${VA_IN_HOME_ASSISTANT}
+      - ${VA_ON_DEVICE}
+    initial_option: ${VA_IN_HOME_ASSISTANT}
     on_value:
       - if:
           condition:
-            lambda: return x == "In Home Assistant";
+            lambda: return x == "${VA_IN_HOME_ASSISTANT}";
           then:
             - micro_wake_word.stop
             - delay: 500ms
@@ -344,24 +441,11 @@ text_sensor:
       id: ip_addr
   - id: wakeword_location
     platform: template
-  - id: text_request
+  - id: va_request
     platform: template
-    on_value:
-      lambda: |-
-        if(id(text_request).state.length()>32) {
-          std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_request).state = (truncated+"...").c_str();
-        }
-  - id: text_response
+  - id: va_response
     platform: template
-    on_value:
-      lambda: |-
-        if(id(text_response).state.length()>32) {
-          std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_response).state = (truncated+"...").c_str();
-        }
+
 
 number:
   - id: mem_settings_screen_saver_delay
@@ -394,7 +478,7 @@ font:
     id: font_extra_large
     size: 60
     glyphs: [Z]
-  - file: "https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome/raw/main/fonts/materialdesignicons-webfont.ttf"
+  - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_small
     size: 45
     glyphs: [
@@ -432,7 +516,7 @@ font:
       "\U000F004F",#arrow-left-bold-circle
       "\U000F0056",#arrow-right-bold-circle
       ]
-  - file: "https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome/raw/main/fonts/materialdesignicons-webfont.ttf"
+  - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_large
     size: 65
     glyphs: [
@@ -606,11 +690,11 @@ script:
           }
   - id: change_app_state
     parameters:
-      next_state: int
+      nextState: int
     then:
       - lambda: |-
-          id(app_state) = next_state;
-          switch (next_state) {
+          id(app_state) = nextState;
+          switch (nextState) {
             case ${APP_STATE_LOADING}:
               id(s3_box_lcd).show_page(id(loading_page));
               break;
@@ -633,8 +717,15 @@ script:
               id(s3_box_lcd).show_page(id(screen_saver_page));
               break;
             default:
-              ESP_LOGE("change_app_state", "Unknown state: %d", next_state);
+              ESP_LOGE("change_app_state", "Unknown state: %d", nextState);
           }
+      - component.update: s3_box_lcd
+  - id: change_va_state
+    parameters:
+      nextState: int
+    then:
+      - lambda: ESP_LOGD("change_va_state", "%d", nextState);
+      - lambda: id(va_state) = nextState;
       - component.update: s3_box_lcd
   - id: save_ir_button
     parameters:
@@ -799,7 +890,7 @@ binary_sensor:
             then:
               - script.execute: 
                   id: change_app_state
-                  next_state: ${APP_STATE_STATUS}
+                  nextState: ${APP_STATE_STATUS}
     on_release:
       then:
         - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
@@ -819,7 +910,7 @@ binary_sensor:
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) - 1) % ${NUM_PAGES}; return next ? next : (${NUM_PAGES} - 1);'
+                  nextState: !lambda 'int next = (id(app_state) - 1) % ${NUM_PAGES}; return next ? next : (${NUM_PAGES} - 1);'
   # Touchscreen next page
   - platform: touchscreen
     id: ts_next_button
@@ -836,7 +927,7 @@ binary_sensor:
             then:
               - script.execute:
                   id: change_app_state
-                  next_state: !lambda 'int next = (id(app_state) + 1) % ${NUM_PAGES}; return next ? next : 1;'
+                  nextState: !lambda 'int next = (id(app_state) + 1) % ${NUM_PAGES}; return next ? next : 1;'
   # Touchscreen ir memory button 1
   - platform: touchscreen
     id: ts_ir_memory_1_button
@@ -1062,7 +1153,7 @@ interval:
                 else:
                 - script.execute: 
                     id: change_app_state
-                    next_state: ${APP_STATE_SCREEN_SAVER}
+                    nextState: ${APP_STATE_SCREEN_SAVER}
 
 remote_receiver:
   id: ir_rx
@@ -1424,13 +1515,12 @@ display:
             y += 15;
             it.print(x, y, id(font_small), white, "press the button you want to record.");
             y += 15;
-            if (id(enable_ir).state) {
+            if (id(ir_learning_state) == 2) {
               it.print(320 / 2, y, id(font_icon_small), yellow, TextAlign::TOP_CENTER, "\U000F0330");
             } else {
               it.print(320 / 2, y, id(font_icon_small), blue_dark, TextAlign::TOP_CENTER, "\U000F032E");
             }
             y += 45;
-            it.printf(320 / 2, y, id(font_small), white, TextAlign::TOP_CENTER, "%d", id(ir_learning_state));
             
             // # cancel button
             y = 200;
@@ -1481,6 +1571,52 @@ display:
           if (!id(nav_lock)) {
             it.print(5, (240 - 5), id(font_icon_large), TextAlign::BOTTOM_LEFT, "\U000F004F");
             it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
+          }
+
+          int x = 15;
+          int y = 46;
+
+          it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(wake_word_engine_location).state.c_str());
+
+          y += 15;
+          std::string stateStr = "Unknown";
+          switch (id(va_state)) {
+            case ${VA_STATE_IDLE}:
+              stateStr = "Idle";
+              break;
+            case ${VA_STATE_LISTENING}:
+              stateStr = "Listening";
+              break;
+            case ${VA_STATE_THINKING}:
+              stateStr = "Thinking";
+              break;
+            case ${VA_STATE_NOT_READY}:
+              stateStr = "Not Ready";
+              break;
+            case ${VA_STATE_REPLYING}:
+              stateStr = "Replying";
+              break;
+            case ${VA_STATE_ERROR}:
+              stateStr = "Error";
+              break;
+            case ${VA_STATE_MUTED}:
+              stateStr = "Muted";
+              break;
+          }
+          it.printf(x, y, id(font_small), white, "Current state: %s", stateStr.c_str());
+
+          if (id(va_request).state.length() > 0) {
+            y += 15;
+            it.print(x, y, id(font_small), white, "Last request:");
+            y += 15;
+            it.printf(x, y, id(font_small), white, "%s", id(va_request).state.c_str());
+          }
+
+          if (id(va_response).state.length() > 0) {
+            y += 15;
+            it.print(x, y, id(font_small), white, "Last response:");
+            y += 15;
+            it.printf(x, y, id(font_small), white, "%s", id(va_response).state.c_str());
           }
 
       - id: settings_page
