@@ -5,17 +5,16 @@
     - ~~network connection~~
     - ~~ha/api connection~~
     - ~~ir rx status~~
-    - voice status
-      - what it heard
-      - what its response is
-    - push to talk voice assistant
     - ~~temperature monitor~~
     - ~~battery monitor~~
+    - VA status
   - ~~Touch screen~~
     - ~~red circle button~~
     - ~~go to IR learning mode~~
     - ~~multiple virtual IR blast buttons~~
-  - Working voice assistant with wake word
+  - ~~Working voice assistant with wake word~~
+    - ~~what it heard~~
+    - ~~what its response is~~
   - ~~IR learning~~
     - ~~learn multiple buttons~~
     - ~~save to and load from flash~~
