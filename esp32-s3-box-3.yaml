@@ -107,7 +107,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        nextState: ${APP_STATE_VA}
+        nextState: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -220,7 +220,7 @@ micro_wake_word:
 voice_assistant:
   id: va
   microphone: mic
-  #media_player: adf_media_player
+  media_player: adf_media_player
   use_wake_word: true
   noise_suppression_level: ${noise_suppression_level}
   auto_gain: 31dBFS
@@ -443,7 +443,6 @@ text_sensor:
   - id: va_response
     platform: template
 
-
 number:
   - id: mem_settings_screen_saver_delay
     platform: template
@@ -522,34 +521,32 @@ font:
       ]
 
 image:
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/notready.png"
+    id: notready_img
+    type: RGB24
+    use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/error.png"
     id: error_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/idle.png"
     id: idle_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/listening.png"
     id: listening_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/thinking.png"
     id: thinking_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/replying.png"
     id: replying_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/loading.png"
     id: loading_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
 
@@ -1492,6 +1489,29 @@ display:
           it.print(x, y, id(font_icon_small), blue, "\U000F050F");
           it.printf(x + 22, y + 41, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
           it.printf(x + 23, y + 41, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
+
+          // VA status image
+          y = (it.get_height() / 2) - 30;
+          switch (id(va_state)) {
+            case ${VA_STATE_NOT_READY}:
+              it.image((it.get_width() / 2), y, id(notready_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_IDLE}:
+              it.image((it.get_width() / 2), y, id(idle_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_LISTENING}:
+              it.image((it.get_width() / 2), y, id(listening_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_THINKING}:
+              it.image((it.get_width() / 2), y, id(thinking_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_REPLYING}:
+              it.image((it.get_width() / 2), y, id(replying_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_ERROR}:
+              it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
+              break;
+          }
 
       - id: ir_learn_page
         lambda: |-
