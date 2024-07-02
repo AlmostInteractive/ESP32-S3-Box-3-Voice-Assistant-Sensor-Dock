@@ -1,13 +1,13 @@
 # ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock
 
 ## Goals:
-  - Status screen
+  - ~~Status screen~~
     - ~~network connection~~
     - ~~ha/api connection~~
     - ~~ir rx status~~
     - ~~temperature monitor~~
     - ~~battery monitor~~
-    - VA status
+    - ~~VA status~~
   - ~~Touch screen~~
     - ~~red circle button~~
     - ~~go to IR learning mode~~
