@@ -637,6 +637,10 @@ globals:
     type: int
     restore_value: false
     initial_value: ${VA_STATE_NOT_READY}
+  - id: mute_error
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 script:
   - id: initialize
@@ -881,15 +885,8 @@ binary_sensor:
     entity_category: diagnostic
     on_press: 
       then:
-        - logger.log:
-            format: "Mute press"
-    on_release: 
-      then:
-        - logger.log:
-            format: "Mute release"
-    on_state:
-      then:
-        - lambda: ESP_LOGD("mute_button", "on_state %d", x) ;
+        - lambda: ESP_LOGD("binary_sensor", "Mute button pressed. Device needs to be rebooted before VA will work."); id(mute_error) = true;
+        - component.update: s3_box_lcd
   # radar  
   - platform: gpio
     id: radar_sensor
@@ -909,6 +906,8 @@ binary_sensor:
                   nextState: !lambda 'return id(wake_app_state);'
     on_release:
       then:
+        - wait_until: 
+          - lambda: return id(ha_time).now().is_valid();
         - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
   # Touchscreen previous page
   - platform: touchscreen
@@ -1492,25 +1491,33 @@ display:
 
           // VA status image
           y = (it.get_height() / 2) - 30;
-          switch (id(va_state)) {
-            case ${VA_STATE_NOT_READY}:
-              it.image((it.get_width() / 2), y, id(notready_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_IDLE}:
-              it.image((it.get_width() / 2), y, id(idle_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_LISTENING}:
-              it.image((it.get_width() / 2), y, id(listening_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_THINKING}:
-              it.image((it.get_width() / 2), y, id(thinking_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_REPLYING}:
-              it.image((it.get_width() / 2), y, id(replying_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_ERROR}:
-              it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
-              break;
+          if (id(mute_error)) {
+            it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
+            y += 105;
+            it.print((it.get_width() / 2), y, id(font_small), red, TextAlign::TOP_CENTER, "HW mute has been pressed.");
+            y += 15;
+            it.print((it.get_width() / 2), y, id(font_small), red, TextAlign::TOP_CENTER, "Reboot device to restore VA.");
+          } else {
+            switch (id(va_state)) {
+              case ${VA_STATE_NOT_READY}:
+                it.image((it.get_width() / 2), y, id(notready_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_IDLE}:
+                it.image((it.get_width() / 2), y, id(idle_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_LISTENING}:
+                it.image((it.get_width() / 2), y, id(listening_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_THINKING}:
+                it.image((it.get_width() / 2), y, id(thinking_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_REPLYING}:
+                it.image((it.get_width() / 2), y, id(replying_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_ERROR}:
+                it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
+                break;
+            }
           }
 
       - id: ir_learn_page
@@ -1660,6 +1667,11 @@ display:
             it.print(x, y, id(font_small), white, "Last response:");
             y += 15;
             it.printf(x, y, id(font_small), white, "%s", id(va_response).state.c_str());
+          }
+
+          if (id(mute_error)) {
+            y += 15;
+            it.print(x, y, id(font_small), red, "HW mute error. Reboot device to restore VA.");
           }
 
       - id: settings_page
