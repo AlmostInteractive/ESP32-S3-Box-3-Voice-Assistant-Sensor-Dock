@@ -27,9 +27,9 @@ substitutions:
   VA_STATE_ERROR: '6'
   VA_STATE_MUTED: '7'
 
-  VA_SPEAKER_STATE_MUTE: '0'
-  VA_SPEAKER_STATE_BEEP: '1'
-  VA_SPEAKER_STATE_SPEECH: '2'
+  VA_SPEAKER_MODE_MUTE: "Mute"
+  VA_SPEAKER_MODE_BEEP: "Beep"
+  VA_SPEAKER_MODE_SPEECH: "Speech"
 
 esphome:
   name: ${name}
@@ -226,7 +226,7 @@ media_player:
       - lambda: ESP_LOGD("media_player", "on_announcement");
       - if:
           condition:
-            - lambda: return id(mem_va_speaker_state) != ${VA_SPEAKER_STATE_SPEECH};
+            - lambda: return id(mem_va_speaker_mode).state != "${VA_SPEAKER_MODE_SPEECH}";
           then:
             - media_player.stop: adf_media_player
 
@@ -248,7 +248,7 @@ voice_assistant:
     - lambda: ESP_LOGD("voice_assistant_on", "on_client_connected");
     - if:
         condition:
-          lambda: return id(wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
+          lambda: return id(mem_wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
         then:
           - lambda: id(va).set_use_wake_word(true);
           - voice_assistant.start_continuous
@@ -262,7 +262,7 @@ voice_assistant:
     - lambda: ESP_LOGD("voice_assistant_on", "on_client_disconnected");
     - if:
         condition:
-          lambda: return id(wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
+          lambda: return id(mem_wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
         then:
           - lambda: id(va).set_use_wake_word(false);
         else:
@@ -325,13 +325,13 @@ voice_assistant:
     - lambda: ESP_LOGD("voice_assistant_on", "on_end");
     - if:
         condition:
-          - lambda: return id(wake_word_engine_location).state == "${VA_ON_DEVICE}";
+          - lambda: return id(mem_wake_word_engine_location).state == "${VA_ON_DEVICE}";
         then:
           - wait_until:
               condition:
                 not:
                   voice_assistant.is_running
-              timeout: !lambda 'return (id(mem_va_speaker_state) != ${VA_SPEAKER_STATE_SPEECH}) ? 500 : 180000;' #ms
+              timeout: !lambda 'return (id(mem_va_speaker_mode).state != "${VA_SPEAKER_MODE_SPEECH}") ? 500 : 180000;' #ms
           - micro_wake_word.start
     - script.execute:
         id: change_va_state
@@ -378,10 +378,10 @@ switch:
         - component.update: s3_box_lcd
 
 select:
-  - platform: template
+  - id: mem_wake_word_engine_location
+    platform: template
     entity_category: config
     name: Wake word engine location
-    id: wake_word_engine_location
     optimistic: true
     restore_value: true
     options:
@@ -410,6 +410,19 @@ select:
             - delay: 500ms
             - micro_wake_word.start
             - component.update: s3_box_lcd
+  - id: mem_va_speaker_mode
+    platform: template
+    entity_category: config
+    name: VA speaker mode
+    optimistic: true
+    restore_value: true
+    options:
+      - ${VA_SPEAKER_MODE_MUTE}
+      - ${VA_SPEAKER_MODE_BEEP}
+      - ${VA_SPEAKER_MODE_SPEECH}
+    initial_option: ${VA_SPEAKER_MODE_SPEECH}
+    on_value:
+      - component.update: s3_box_lcd
 
 sensor:
   - platform: aht10 
@@ -613,10 +626,6 @@ globals:
   - id: mem_ir_code_4
     type: int[256]
     restore_value: true
-  - id: mem_va_speaker_state
-    type: int
-    restore_value: true
-    initial_value: ${VA_SPEAKER_STATE_SPEECH}
   # saved in ram
   - id: app_state
     type: int
@@ -898,9 +907,8 @@ binary_sensor:
     name: "Home"
     index: 0
     on_press:
-      - lambda: |-
-          ESP_LOGD("binary_sensor", "Red circle pressed");
-          id(mem_va_speaker_state) = (id(mem_va_speaker_state) + 1) % 3;
+      - lambda: ESP_LOGD("binary_sensor", "Red circle pressed");
+      - select.next: mem_va_speaker_mode
       - component.update: s3_box_lcd
   # mute switch
   - platform: gpio
@@ -1653,20 +1661,10 @@ display:
           int x = 15;
           int y = 46;
 
-          it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(wake_word_engine_location).state.c_str());
+          it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(mem_wake_word_engine_location).state.c_str());
 
           y += 15;
-          switch (id(mem_va_speaker_state)) {
-            case ${VA_SPEAKER_STATE_MUTE}:
-              it.printf(x, y, id(font_small), white, "Speaker state: Mute");
-              break; 
-            case ${VA_SPEAKER_STATE_BEEP}:
-              it.printf(x, y, id(font_small), white, "Speaker state: Beep");
-              break; 
-            case ${VA_SPEAKER_STATE_SPEECH}:
-              it.printf(x, y, id(font_small), white, "Speaker state: Speech");
-              break; 
-          }
+          it.printf(x, y, id(font_small), white, "Speaker state: %s", id(mem_va_speaker_mode).state.c_str());
 
           y += 15;
           std::string stateStr = "Unknown";
