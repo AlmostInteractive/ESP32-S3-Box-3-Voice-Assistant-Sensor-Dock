@@ -1,7 +1,7 @@
 substitutions:
   name: esp32-s3box-3
   friendly_name: ESP32 S3 Box 3 Voice Assistant++
-  micro_wake_word_model: okay_nabu  # options: okay_nabu, hey_jarvis, alexa
+  micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
 
   # don't mess with these, used like global constants
@@ -26,6 +26,10 @@ substitutions:
   VA_STATE_REPLYING: '5'
   VA_STATE_ERROR: '6'
   VA_STATE_MUTED: '7'
+
+  VA_SPEAKER_STATE_MUTE: '0'
+  VA_SPEAKER_STATE_BEEP: '1'
+  VA_SPEAKER_STATE_SPEECH: '2'
 
 esphome:
   name: ${name}
@@ -107,7 +111,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        nextState: ${APP_STATE_STATUS}
+        nextState: ${APP_STATE_VA}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -210,6 +214,21 @@ media_player:
       - self
       - resampler
       - adf_i2s_out
+    on_state:
+      - lambda: ESP_LOGD("media_player", "on_state");
+    on_play:
+      - lambda: ESP_LOGD("media_player", "on_play");
+    on_pause:
+      - lambda: ESP_LOGD("media_player", "on_pause");
+    on_idle:
+      - lambda: ESP_LOGD("media_player", "on_idle");
+    on_announcement:
+      - lambda: ESP_LOGD("media_player", "on_announcement");
+      - if:
+          condition:
+            - lambda: return id(mem_va_speaker_state) != ${VA_SPEAKER_STATE_SPEECH};
+          then:
+            - media_player.stop: adf_media_player
 
 micro_wake_word:
   model: ${micro_wake_word_model}
@@ -309,8 +328,10 @@ voice_assistant:
           - lambda: return id(wake_word_engine_location).state == "${VA_ON_DEVICE}";
         then:
           - wait_until:
-              not:
-                voice_assistant.is_running
+              condition:
+                not:
+                  voice_assistant.is_running
+              timeout: !lambda 'return (id(mem_va_speaker_state) != ${VA_SPEAKER_STATE_SPEECH}) ? 500 : 180000;' #ms
           - micro_wake_word.start
     - script.execute:
         id: change_va_state
@@ -592,6 +613,10 @@ globals:
   - id: mem_ir_code_4
     type: int[256]
     restore_value: true
+  - id: mem_va_speaker_state
+    type: int
+    restore_value: true
+    initial_value: ${VA_SPEAKER_STATE_SPEECH}
   # saved in ram
   - id: app_state
     type: int
@@ -873,8 +898,10 @@ binary_sensor:
     name: "Home"
     index: 0
     on_press:
-      - logger.log:
-          format: "Red circle pressed"
+      - lambda: |-
+          ESP_LOGD("binary_sensor", "Red circle pressed");
+          id(mem_va_speaker_state) = (id(mem_va_speaker_state) + 1) % 3;
+      - component.update: s3_box_lcd
   # mute switch
   - platform: gpio
     name: "Mute"
@@ -883,7 +910,7 @@ binary_sensor:
       inverted: true
     disabled_by_default: true
     entity_category: diagnostic
-    on_press: 
+    on_state: 
       then:
         - lambda: ESP_LOGD("binary_sensor", "Mute button pressed. Device needs to be rebooted before VA will work."); id(mute_error) = true;
         - component.update: s3_box_lcd
@@ -896,7 +923,7 @@ binary_sensor:
     device_class: "occupancy"
     on_press:
       then:
-        - lambda: 'id(radar_last_seen) = -1;'
+        - lambda: id(radar_last_seen) = -1;
         - if:
             condition:
               - lambda: return id(app_state) == ${APP_STATE_SCREEN_SAVER};
@@ -908,7 +935,7 @@ binary_sensor:
       then:
         - wait_until: 
           - lambda: return id(ha_time).now().is_valid();
-        - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
+        - lambda: id(radar_last_seen) = id(ha_time).now().timestamp;
   # Touchscreen previous page
   - platform: touchscreen
     id: ts_prev_button
@@ -1627,6 +1654,19 @@ display:
           int y = 46;
 
           it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(wake_word_engine_location).state.c_str());
+
+          y += 15;
+          switch (id(mem_va_speaker_state)) {
+            case ${VA_SPEAKER_STATE_MUTE}:
+              it.printf(x, y, id(font_small), white, "Speaker state: Mute");
+              break; 
+            case ${VA_SPEAKER_STATE_BEEP}:
+              it.printf(x, y, id(font_small), white, "Speaker state: Beep");
+              break; 
+            case ${VA_SPEAKER_STATE_SPEECH}:
+              it.printf(x, y, id(font_small), white, "Speaker state: Speech");
+              break; 
+          }
 
           y += 15;
           std::string stateStr = "Unknown";
