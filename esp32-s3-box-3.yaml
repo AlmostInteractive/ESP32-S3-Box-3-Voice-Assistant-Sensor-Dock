@@ -68,6 +68,10 @@ external_components:
     components: [ adf_pipeline, i2s_audio ]
     refresh: 0s
 
+dashboard_import:
+  package_import_url: github://AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/esp32-s3-box-3.yaml.yaml@master
+  import_full_config: true
+
 psram:
   mode: octal
   speed: 80MHz
@@ -97,6 +101,8 @@ api:
     - component.update: s3_box_lcd
 
 wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
   ap:
     ssid: ${name}
     password: s3box123
@@ -107,7 +113,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        nextState: ${APP_STATE_VA}
+        nextState: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -362,10 +368,12 @@ switch:
   - id: enable_ir
     platform: gpio
     name: "IR Power"
+    icon: 'mdi:led-variant-on'
+    entity_category: config
+    restore_mode: RESTORE_DEFAULT_ON
     pin:
       number: GPIO44
       inverted: true
-    restore_mode: RESTORE_DEFAULT_ON
     on_turn_on: 
       then:
         - component.update: s3_box_lcd
@@ -375,6 +383,8 @@ switch:
   - id: va_mute
     platform: template
     name: "Mute VA Speaker"
+    icon: 'mdi:volume-off'
+    entity_category: config
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
     turn_on_action: 
@@ -503,6 +513,12 @@ font:
     size: 60
     glyphs: [Z]
   - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: font_icon_tiny
+    size: 30
+    glyphs: [
+      "\U000F00AD",#block-helper
+    ]
+  - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_small
     size: 45
     glyphs: [
@@ -539,7 +555,6 @@ font:
       "\U000F0330",#led-variant-outline
       "\U000F004F",#arrow-left-bold-circle
       "\U000F0056",#arrow-right-bold-circle
-      "\U000F00AD",#block-helper
       ]
   - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_large
@@ -1550,9 +1565,9 @@ display:
                 break;
             }
             
-            y += 65;
+            y += 68;
             if (id(va_mute).state) {
-              it.print((it.get_width() / 2), y, id(font_icon_small), red, TextAlign::TOP_CENTER, "\U000F00AD");
+              it.print((it.get_width() / 2), y, id(font_icon_tiny), red, TextAlign::TOP_CENTER, "\U000F00AD");
             }
           }
 
