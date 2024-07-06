@@ -24,8 +24,7 @@
   - Settings Screen:
     - volume adjustment
     - screen saver time out
-    - VA TTS / beep / mute on wake word
-    - VA TTS / beep / mute after command
+    - VA speech / mute ~~(red button toggle)~~
 
 ## Resources:
 
