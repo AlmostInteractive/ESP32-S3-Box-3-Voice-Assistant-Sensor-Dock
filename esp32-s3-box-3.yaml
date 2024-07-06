@@ -1664,7 +1664,7 @@ display:
           it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(mem_wake_word_engine_location).state.c_str());
 
           y += 15;
-          it.printf(x, y, id(font_small), white, "Speaker state: %s", id(mem_va_speaker_mode).state.c_str());
+          it.printf(x, y, id(font_small), white, "Speaker mode: %s", id(mem_va_speaker_mode).state.c_str());
 
           y += 15;
           std::string stateStr = "Unknown";
