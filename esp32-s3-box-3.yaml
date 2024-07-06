@@ -1,7 +1,7 @@
 substitutions:
   name: esp32-s3box-3
   friendly_name: ESP32 S3 Box 3 Voice Assistant++
-  micro_wake_word_model: okay_nabu  # options: okay_nabu, hey_jarvis, alexa
+  micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
 
   # don't mess with these, used like global constants
@@ -26,6 +26,10 @@ substitutions:
   VA_STATE_REPLYING: '5'
   VA_STATE_ERROR: '6'
   VA_STATE_MUTED: '7'
+
+  VA_SPEAKER_MODE_MUTE: "Mute"
+  VA_SPEAKER_MODE_BEEP: "Beep"
+  VA_SPEAKER_MODE_SPEECH: "Speech"
 
 esphome:
   name: ${name}
@@ -107,7 +111,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        nextState: ${APP_STATE_STATUS}
+        nextState: ${APP_STATE_VA}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -210,6 +214,21 @@ media_player:
       - self
       - resampler
       - adf_i2s_out
+    on_state:
+      - lambda: ESP_LOGD("media_player", "on_state");
+    on_play:
+      - lambda: ESP_LOGD("media_player", "on_play");
+    on_pause:
+      - lambda: ESP_LOGD("media_player", "on_pause");
+    on_idle:
+      - lambda: ESP_LOGD("media_player", "on_idle");
+    on_announcement:
+      - lambda: ESP_LOGD("media_player", "on_announcement");
+      - if:
+          condition:
+            - lambda: return id(mem_va_speaker_mode).state != "${VA_SPEAKER_MODE_SPEECH}";
+          then:
+            - media_player.stop: adf_media_player
 
 micro_wake_word:
   model: ${micro_wake_word_model}
@@ -229,7 +248,7 @@ voice_assistant:
     - lambda: ESP_LOGD("voice_assistant_on", "on_client_connected");
     - if:
         condition:
-          lambda: return id(wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
+          lambda: return id(mem_wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
         then:
           - lambda: id(va).set_use_wake_word(true);
           - voice_assistant.start_continuous
@@ -243,7 +262,7 @@ voice_assistant:
     - lambda: ESP_LOGD("voice_assistant_on", "on_client_disconnected");
     - if:
         condition:
-          lambda: return id(wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
+          lambda: return id(mem_wake_word_engine_location).state == "${VA_IN_HOME_ASSISTANT}";
         then:
           - lambda: id(va).set_use_wake_word(false);
         else:
@@ -306,11 +325,13 @@ voice_assistant:
     - lambda: ESP_LOGD("voice_assistant_on", "on_end");
     - if:
         condition:
-          - lambda: return id(wake_word_engine_location).state == "${VA_ON_DEVICE}";
+          - lambda: return id(mem_wake_word_engine_location).state == "${VA_ON_DEVICE}";
         then:
           - wait_until:
-              not:
-                voice_assistant.is_running
+              condition:
+                not:
+                  voice_assistant.is_running
+              timeout: !lambda 'return (id(mem_va_speaker_mode).state != "${VA_SPEAKER_MODE_SPEECH}") ? 500 : 180000;' #ms
           - micro_wake_word.start
     - script.execute:
         id: change_va_state
@@ -357,10 +378,10 @@ switch:
         - component.update: s3_box_lcd
 
 select:
-  - platform: template
+  - id: mem_wake_word_engine_location
+    platform: template
     entity_category: config
     name: Wake word engine location
-    id: wake_word_engine_location
     optimistic: true
     restore_value: true
     options:
@@ -389,6 +410,19 @@ select:
             - delay: 500ms
             - micro_wake_word.start
             - component.update: s3_box_lcd
+  - id: mem_va_speaker_mode
+    platform: template
+    entity_category: config
+    name: VA speaker mode
+    optimistic: true
+    restore_value: true
+    options:
+      - ${VA_SPEAKER_MODE_MUTE}
+      - ${VA_SPEAKER_MODE_BEEP}
+      - ${VA_SPEAKER_MODE_SPEECH}
+    initial_option: ${VA_SPEAKER_MODE_SPEECH}
+    on_value:
+      - component.update: s3_box_lcd
 
 sensor:
   - platform: aht10 
@@ -637,6 +671,10 @@ globals:
     type: int
     restore_value: false
     initial_value: ${VA_STATE_NOT_READY}
+  - id: mute_error
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 script:
   - id: initialize
@@ -869,8 +907,9 @@ binary_sensor:
     name: "Home"
     index: 0
     on_press:
-      - logger.log:
-          format: "Red circle pressed"
+      - lambda: ESP_LOGD("binary_sensor", "Red circle pressed");
+      - select.next: mem_va_speaker_mode
+      - component.update: s3_box_lcd
   # mute switch
   - platform: gpio
     name: "Mute"
@@ -879,17 +918,10 @@ binary_sensor:
       inverted: true
     disabled_by_default: true
     entity_category: diagnostic
-    on_press: 
+    on_state: 
       then:
-        - logger.log:
-            format: "Mute press"
-    on_release: 
-      then:
-        - logger.log:
-            format: "Mute release"
-    on_state:
-      then:
-        - lambda: ESP_LOGD("mute_button", "on_state %d", x) ;
+        - lambda: ESP_LOGD("binary_sensor", "Mute button pressed. Device needs to be rebooted before VA will work."); id(mute_error) = true;
+        - component.update: s3_box_lcd
   # radar  
   - platform: gpio
     id: radar_sensor
@@ -899,7 +931,7 @@ binary_sensor:
     device_class: "occupancy"
     on_press:
       then:
-        - lambda: 'id(radar_last_seen) = -1;'
+        - lambda: id(radar_last_seen) = -1;
         - if:
             condition:
               - lambda: return id(app_state) == ${APP_STATE_SCREEN_SAVER};
@@ -909,7 +941,9 @@ binary_sensor:
                   nextState: !lambda 'return id(wake_app_state);'
     on_release:
       then:
-        - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
+        - wait_until: 
+          - lambda: return id(ha_time).now().is_valid();
+        - lambda: id(radar_last_seen) = id(ha_time).now().timestamp;
   # Touchscreen previous page
   - platform: touchscreen
     id: ts_prev_button
@@ -1492,25 +1526,33 @@ display:
 
           // VA status image
           y = (it.get_height() / 2) - 30;
-          switch (id(va_state)) {
-            case ${VA_STATE_NOT_READY}:
-              it.image((it.get_width() / 2), y, id(notready_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_IDLE}:
-              it.image((it.get_width() / 2), y, id(idle_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_LISTENING}:
-              it.image((it.get_width() / 2), y, id(listening_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_THINKING}:
-              it.image((it.get_width() / 2), y, id(thinking_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_REPLYING}:
-              it.image((it.get_width() / 2), y, id(replying_img), ImageAlign::TOP_CENTER);
-              break;
-            case ${VA_STATE_ERROR}:
-              it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
-              break;
+          if (id(mute_error)) {
+            it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
+            y += 105;
+            it.print((it.get_width() / 2), y, id(font_small), red, TextAlign::TOP_CENTER, "HW mute has been pressed.");
+            y += 15;
+            it.print((it.get_width() / 2), y, id(font_small), red, TextAlign::TOP_CENTER, "Reboot device to restore VA.");
+          } else {
+            switch (id(va_state)) {
+              case ${VA_STATE_NOT_READY}:
+                it.image((it.get_width() / 2), y, id(notready_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_IDLE}:
+                it.image((it.get_width() / 2), y, id(idle_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_LISTENING}:
+                it.image((it.get_width() / 2), y, id(listening_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_THINKING}:
+                it.image((it.get_width() / 2), y, id(thinking_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_REPLYING}:
+                it.image((it.get_width() / 2), y, id(replying_img), ImageAlign::TOP_CENTER);
+                break;
+              case ${VA_STATE_ERROR}:
+                it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
+                break;
+            }
           }
 
       - id: ir_learn_page
@@ -1619,7 +1661,10 @@ display:
           int x = 15;
           int y = 46;
 
-          it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(wake_word_engine_location).state.c_str());
+          it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(mem_wake_word_engine_location).state.c_str());
+
+          y += 15;
+          it.printf(x, y, id(font_small), white, "Speaker mode: %s", id(mem_va_speaker_mode).state.c_str());
 
           y += 15;
           std::string stateStr = "Unknown";
@@ -1660,6 +1705,11 @@ display:
             it.print(x, y, id(font_small), white, "Last response:");
             y += 15;
             it.printf(x, y, id(font_small), white, "%s", id(va_response).state.c_str());
+          }
+
+          if (id(mute_error)) {
+            y += 15;
+            it.print(x, y, id(font_small), red, "HW mute error. Reboot device to restore VA.");
           }
 
       - id: settings_page
