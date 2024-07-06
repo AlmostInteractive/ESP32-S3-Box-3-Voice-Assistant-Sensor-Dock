@@ -79,6 +79,7 @@ logger:
   hardware_uart: USB_SERIAL_JTAG
   level: DEBUG
   logs:
+    micro_wake_word: WARN
     sensor: WARN
     binary_sensor: WARN
     esp-idf: WARN
@@ -106,7 +107,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        nextState: ${APP_STATE_VA}
+        nextState: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -347,17 +348,13 @@ switch:
     pin:
       number: GPIO44
       inverted: true
-    restore_mode: ALWAYS_ON
-    on_turn_off: 
-      then:
-        - component.update: s3_box_lcd
+    restore_mode: RESTORE_DEFAULT_ON
     on_turn_on: 
       then:
         - component.update: s3_box_lcd
-  - platform: template
-    id: mute_switch
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_off: 
+      then:
+        - component.update: s3_box_lcd
 
 select:
   - platform: template
@@ -446,7 +443,6 @@ text_sensor:
   - id: va_response
     platform: template
 
-
 number:
   - id: mem_settings_screen_saver_delay
     platform: template
@@ -525,34 +521,32 @@ font:
       ]
 
 image:
+  - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/notready.png"
+    id: notready_img
+    type: RGB24
+    use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/error.png"
     id: error_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/idle.png"
     id: idle_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/listening.png"
     id: listening_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/thinking.png"
     id: thinking_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/replying.png"
     id: replying_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/loading.png"
     id: loading_img
-    resize: 320x240
     type: RGB24
     use_transparency: true
 
@@ -603,6 +597,9 @@ globals:
     type: int
     restore_value: false
     initial_value: ${APP_STATE_LOADING}
+  - id: wake_app_state
+    type: int
+    restore_value: false
   - id: nav_lock
     type: bool
     restore_value: false
@@ -874,6 +871,25 @@ binary_sensor:
     on_press:
       - logger.log:
           format: "Red circle pressed"
+  # mute switch
+  - platform: gpio
+    name: "Mute"
+    pin:
+      number: GPIO1
+      inverted: true
+    disabled_by_default: true
+    entity_category: diagnostic
+    on_press: 
+      then:
+        - logger.log:
+            format: "Mute press"
+    on_release: 
+      then:
+        - logger.log:
+            format: "Mute release"
+    on_state:
+      then:
+        - lambda: ESP_LOGD("mute_button", "on_state %d", x) ;
   # radar  
   - platform: gpio
     id: radar_sensor
@@ -890,7 +906,7 @@ binary_sensor:
             then:
               - script.execute: 
                   id: change_app_state
-                  nextState: ${APP_STATE_STATUS}
+                  nextState: !lambda 'return id(wake_app_state);'
     on_release:
       then:
         - lambda: 'id(radar_last_seen) = id(ha_time).now().timestamp;'          
@@ -1143,7 +1159,10 @@ interval:
       # Screen saver activation
       - if:
           condition: 
-            - lambda: 'return id(radar_last_seen) > 0 && (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay).state);'
+            - lambda: |-
+                return id(app_state) != ${APP_STATE_LOADING} && 
+                  id(radar_last_seen) > 0 && 
+                  (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay).state);
           then:
             - if:
                 condition:
@@ -1151,9 +1170,10 @@ interval:
                 then:
                   - component.update: s3_box_lcd
                 else:
-                - script.execute: 
-                    id: change_app_state
-                    nextState: ${APP_STATE_SCREEN_SAVER}
+                  - lambda: id(wake_app_state) = id(app_state);
+                  - script.execute: 
+                      id: change_app_state
+                      nextState: ${APP_STATE_SCREEN_SAVER}
 
 remote_receiver:
   id: ir_rx
@@ -1469,6 +1489,29 @@ display:
           it.print(x, y, id(font_icon_small), blue, "\U000F050F");
           it.printf(x + 22, y + 41, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
           it.printf(x + 23, y + 41, id(font_small), black, TextAlign::BOTTOM_CENTER, "%.f", id(s3temp).state);
+
+          // VA status image
+          y = (it.get_height() / 2) - 30;
+          switch (id(va_state)) {
+            case ${VA_STATE_NOT_READY}:
+              it.image((it.get_width() / 2), y, id(notready_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_IDLE}:
+              it.image((it.get_width() / 2), y, id(idle_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_LISTENING}:
+              it.image((it.get_width() / 2), y, id(listening_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_THINKING}:
+              it.image((it.get_width() / 2), y, id(thinking_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_REPLYING}:
+              it.image((it.get_width() / 2), y, id(replying_img), ImageAlign::TOP_CENTER);
+              break;
+            case ${VA_STATE_ERROR}:
+              it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
+              break;
+          }
 
       - id: ir_learn_page
         lambda: |-
