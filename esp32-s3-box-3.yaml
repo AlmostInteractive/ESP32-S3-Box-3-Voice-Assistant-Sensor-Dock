@@ -129,7 +129,7 @@ output:
 light:
   - platform: monochromatic
     id: led
-    name: LCD Backlight
+    name: 'LCD Screen'
     entity_category: config
     output: backlight_output
     restore_mode: RESTORE_DEFAULT_ON
@@ -389,9 +389,11 @@ switch:
     optimistic: true
     turn_on_action: 
       then:
+        - delay: 250ms
         - component.update: s3_box_lcd
     turn_off_action: 
       then:
+        - delay: 250ms
         - component.update: s3_box_lcd
 
 select:
@@ -865,35 +867,39 @@ script:
                 data: !lambda "return id(ir_memory_button_codes)[buttonIndex].c_str();"                
 
 button:
-  - platform: restart
-    id: reboot
+  - id: reboot
+    platform: restart
     name: "Reboot"
-  - platform: template
-    id: ir_btn_1
+  - id: ir_btn_1
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 1"
     on_press:
       then:
         - script.execute:
             id: send_ir_code
             buttonIndex: 0
-  - platform: template
-    id: ir_btn_2
+  - id: ir_btn_2
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 2"
     on_press:
       then:
         - script.execute:
             id: send_ir_code
             buttonIndex: 1
-  - platform: template
-    id: ir_btn_3
+  - id: ir_btn_3
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 3"
     on_press:
       then:
         - script.execute:
             id: send_ir_code
             buttonIndex: 2
-  - platform: template
-    id: ir_btn_4
+  - id: ir_btn_4
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 4"
     on_press:
       then:
