@@ -1,33 +1,17 @@
 # ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock
 
-## Goals:
-  - ~~Status screen~~
-    - ~~network connection~~
-    - ~~ha/api connection~~
-    - ~~ir rx status~~
-    - ~~temperature monitor~~
-    - ~~battery monitor~~
-    - ~~VA status~~
-  - ~~Touch screen~~
-    - ~~red circle button~~
-    - ~~go to IR learning mode~~
-    - ~~multiple virtual IR blast buttons~~
-  - ~~Working voice assistant with wake word~~
-    - ~~what it heard~~
-    - ~~what its response is~~
-  - ~~IR learning~~
-    - ~~learn multiple buttons~~
-    - ~~save to and load from flash~~
-  - ~~Radar sensor~~
-    - ~~screen saver~~
-  - HA Text-to-Speech
-  - Settings Screen:
-    - volume adjustment
-    - screen saver time out
-    - VA TTS / beep / mute on wake word
-    - VA TTS / beep / mute after command
+This config integrates Voice Assistant with the S3 Box 3's sensor dock.
 
-## Resources:
+Features:
+  - Voice assistant with on-device and in-HA wakeword
+  - Touchscreen
+  - IR learning
+  - IR blasting
+  - Temperature sensor
+  - Battery sensor
+  - Radar presence detection
+
+### Resources
 
 https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome
 

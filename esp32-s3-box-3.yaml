@@ -1,10 +1,10 @@
 substitutions:
-  name: esp32-s3box-3
-  friendly_name: ESP32 S3 Box 3 Voice Assistant++
+  name: s3box3-voice-asst-sensor-dock
+  friendly_name: S3 Box 3 Voice Assistant Sensor Dock
   micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
 
-  # don't mess with these, used like global constants
+  # ----- don't mess with anything below this line -----
   ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
   
   VA_IN_HOME_ASSISTANT: "In Home Assistant"
@@ -27,10 +27,6 @@ substitutions:
   VA_STATE_ERROR: '6'
   VA_STATE_MUTED: '7'
 
-  VA_SPEAKER_MODE_MUTE: "Mute"
-  VA_SPEAKER_MODE_BEEP: "Beep"
-  VA_SPEAKER_MODE_SPEECH: "Speech"
-
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
@@ -46,7 +42,7 @@ esphome:
       - component.update: s3_box_lcd
   project:
     name: "VoiceAsstantSensorDock.s3box"
-    version: "0.1.0"
+    version: "1.0.0"
 
 esp32:
   board: esp32s3box
@@ -71,6 +67,10 @@ external_components:
       ref: dev-next
     components: [ adf_pipeline, i2s_audio ]
     refresh: 0s
+
+dashboard_import:
+  package_import_url: github://AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/esp32-s3-box-3.yaml.yaml@master
+  import_full_config: true
 
 psram:
   mode: octal
@@ -101,6 +101,8 @@ api:
     - component.update: s3_box_lcd
 
 wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
   ap:
     ssid: ${name}
     password: s3box123
@@ -111,7 +113,7 @@ wifi:
         id: initialize
     - script.execute:
         id: change_app_state
-        nextState: ${APP_STATE_VA}
+        nextState: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -127,7 +129,7 @@ output:
 light:
   - platform: monochromatic
     id: led
-    name: LCD Backlight
+    name: 'LCD Screen'
     entity_category: config
     output: backlight_output
     restore_mode: RESTORE_DEFAULT_ON
@@ -226,7 +228,7 @@ media_player:
       - lambda: ESP_LOGD("media_player", "on_announcement");
       - if:
           condition:
-            - lambda: return id(mem_va_speaker_mode).state != "${VA_SPEAKER_MODE_SPEECH}";
+            - lambda: return id(va_mute).state;
           then:
             - media_player.stop: adf_media_player
 
@@ -331,7 +333,7 @@ voice_assistant:
               condition:
                 not:
                   voice_assistant.is_running
-              timeout: !lambda 'return (id(mem_va_speaker_mode).state != "${VA_SPEAKER_MODE_SPEECH}") ? 500 : 180000;' #ms
+              timeout: !lambda 'return id(va_mute).state ? 500 : 180000;' #ms
           - micro_wake_word.start
     - script.execute:
         id: change_va_state
@@ -363,18 +365,35 @@ touchscreen:
   interrupt_pin: GPIO3
 
 switch:
-  - platform: gpio
-    id: enable_ir
+  - id: enable_ir
+    platform: gpio
     name: "IR Power"
+    icon: 'mdi:led-variant-on'
+    entity_category: config
+    restore_mode: RESTORE_DEFAULT_ON
     pin:
       number: GPIO44
       inverted: true
-    restore_mode: RESTORE_DEFAULT_ON
     on_turn_on: 
       then:
         - component.update: s3_box_lcd
     on_turn_off: 
       then:
+        - component.update: s3_box_lcd
+  - id: va_mute
+    platform: template
+    name: "Mute VA Speaker"
+    icon: 'mdi:volume-off'
+    entity_category: config
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    turn_on_action: 
+      then:
+        - delay: 250ms
+        - component.update: s3_box_lcd
+    turn_off_action: 
+      then:
+        - delay: 250ms
         - component.update: s3_box_lcd
 
 select:
@@ -410,19 +429,6 @@ select:
             - delay: 500ms
             - micro_wake_word.start
             - component.update: s3_box_lcd
-  - id: mem_va_speaker_mode
-    platform: template
-    entity_category: config
-    name: VA speaker mode
-    optimistic: true
-    restore_value: true
-    options:
-      - ${VA_SPEAKER_MODE_MUTE}
-      - ${VA_SPEAKER_MODE_BEEP}
-      - ${VA_SPEAKER_MODE_SPEECH}
-    initial_option: ${VA_SPEAKER_MODE_SPEECH}
-    on_value:
-      - component.update: s3_box_lcd
 
 sensor:
   - platform: aht10 
@@ -478,9 +484,9 @@ text_sensor:
     platform: template
 
 number:
-  - id: mem_settings_screen_saver_delay
+  - id: mem_settings_sleep_delay
     platform: template
-    name: "Screen Saver Delay"
+    name: "Sleep Delay"
     icon: 'mdi:sleep'
     entity_category: config
     unit_of_measurement: 'secs'
@@ -509,6 +515,14 @@ font:
     size: 60
     glyphs: [Z]
   - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: font_icon_tiny
+    size: 30
+    glyphs: [
+      "\U000F00AD",#block-helper
+      "\U000F0375",#minus-box
+      "\U000F0416",#plus-box
+    ]
+  - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_small
     size: 45
     glyphs: [
@@ -524,27 +538,25 @@ font:
       "\U000F007A",#battery 10%
       "\U000F10CD",#battery warning
       "\U000F050F",#temp sensor
-      "\U000F024A",#garden/flower
       "\U000F16BD",#wifi connected
-      "\U000F16BC",#wifidisconnected
+      "\U000F16BC",#wifi disconnected
       "\U000F07D0",#api connected
       "\U000F12A8",#touch button
       "\U000F0EBA",#stats
       "\U000F087B",#api disconnected
-      "\U000F0B6C",#car
       "\U000F057E",#speaker on
       "\U000F0581",#speaker off
       "\U000F0493",#settings cog
-      "\U000F1C6F",#info
       "\U000F06E8",#light bulb illuminated
       "\U000F0335",#light bulb off
-      "\U000F075A",#music
       "\U000F0A19",#toggle off
       "\U000F0521",#toggle on
       "\U000F032E",#led-variant-off
       "\U000F0330",#led-variant-outline
       "\U000F004F",#arrow-left-bold-circle
       "\U000F0056",#arrow-right-bold-circle
+      "\U000F0375",#minus-box
+      "\U000F0416",#plus-box
       ]
   - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_large
@@ -705,7 +717,6 @@ script:
             }
           
             length = codeArray[0];
-            ESP_LOGD("initialize", "Found length %d for code %d", length, i + 1);
             if (length <= 0) {
               continue;
             }
@@ -721,7 +732,6 @@ script:
             }
 
             id(ir_memory_button_codes)[i] = hexStr;
-            ESP_LOGD("initialize", "Recovered IR button %d: %s", i + 1, hexStr.c_str());
           }
   - id: change_app_state
     parameters:
@@ -852,38 +862,47 @@ script:
               return true;
           then:
             - remote_transmitter.transmit_pronto:
-                data: !lambda "return id(ir_memory_button_codes)[buttonIndex].c_str();"                
+                data: !lambda 'return id(ir_memory_button_codes)[buttonIndex].c_str();'
+  - id: set_volume
+    parameters:
+      volume: float
+    then:
+      - media_player.volume_set: !lambda 'return volume;' #for some reason, 0.5 is no volume
 
 button:
-  - platform: restart
-    id: reboot
+  - id: reboot
+    platform: restart
     name: "Reboot"
-  - platform: template
-    id: ir_btn_1
+  - id: ir_btn_1
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 1"
     on_press:
       then:
         - script.execute:
             id: send_ir_code
             buttonIndex: 0
-  - platform: template
-    id: ir_btn_2
+  - id: ir_btn_2
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 2"
     on_press:
       then:
         - script.execute:
             id: send_ir_code
             buttonIndex: 1
-  - platform: template
-    id: ir_btn_3
+  - id: ir_btn_3
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 3"
     on_press:
       then:
         - script.execute:
             id: send_ir_code
             buttonIndex: 2
-  - platform: template
-    id: ir_btn_4
+  - id: ir_btn_4
+    platform: template
+    icon: 'mdi:led-variant-off'
     name: "IR Button 4"
     on_press:
       then:
@@ -907,8 +926,9 @@ binary_sensor:
     name: "Home"
     index: 0
     on_press:
-      - lambda: ESP_LOGD("binary_sensor", "Red circle pressed");
-      - select.next: mem_va_speaker_mode
+      - lambda: |-
+          ESP_LOGD("binary_sensor", "Red circle pressed");
+          id(va_mute).publish_state(!id(va_mute).state);
       - component.update: s3_box_lcd
   # mute switch
   - platform: gpio
@@ -923,8 +943,8 @@ binary_sensor:
         - lambda: ESP_LOGD("binary_sensor", "Mute button pressed. Device needs to be rebooted before VA will work."); id(mute_error) = true;
         - component.update: s3_box_lcd
   # radar  
-  - platform: gpio
-    id: radar_sensor
+  - id: radar_sensor
+    platform: gpio
     pin: GPIO21
     disabled_by_default: false
     name: "Presence Detection"
@@ -945,8 +965,8 @@ binary_sensor:
           - lambda: return id(ha_time).now().is_valid();
         - lambda: id(radar_last_seen) = id(ha_time).now().timestamp;
   # Touchscreen previous page
-  - platform: touchscreen
-    id: ts_prev_button
+  - id: ts_prev_button
+    platform: touchscreen
     internal: true
     x_min: 0
     x_max: 70
@@ -962,8 +982,8 @@ binary_sensor:
                   id: change_app_state
                   nextState: !lambda 'int next = (id(app_state) - 1) % ${NUM_PAGES}; return next ? next : (${NUM_PAGES} - 1);'
   # Touchscreen next page
-  - platform: touchscreen
-    id: ts_next_button
+  - id: ts_next_button
+    platform: touchscreen
     internal: true
     x_min: 250
     x_max: 320
@@ -979,8 +999,8 @@ binary_sensor:
                   id: change_app_state
                   nextState: !lambda 'int next = (id(app_state) + 1) % ${NUM_PAGES}; return next ? next : 1;'
   # Touchscreen ir memory button 1
-  - platform: touchscreen
-    id: ts_ir_memory_1_button
+  - id: ts_ir_memory_1_button
+    platform: touchscreen
     internal: true
     x_min: 40
     x_max: 88
@@ -998,8 +1018,8 @@ binary_sensor:
                   id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory button 2
-  - platform: touchscreen
-    id: ts_ir_memory_2_button
+  - id: ts_ir_memory_2_button
+    platform: touchscreen
     internal: true
     x_min: 105
     x_max: 153
@@ -1017,8 +1037,8 @@ binary_sensor:
                   id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory button 3
-  - platform: touchscreen
-    id: ts_ir_memory_3_button
+  - id: ts_ir_memory_3_button
+    platform: touchscreen
     internal: true
     x_min: 170
     x_max: 223
@@ -1036,8 +1056,8 @@ binary_sensor:
                   id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory button 4
-  - platform: touchscreen
-    id: ts_ir_memory_4_button
+  - id: ts_ir_memory_4_button
+    platform: touchscreen
     internal: true
     x_min: 235
     x_max: 283
@@ -1055,8 +1075,8 @@ binary_sensor:
                   id(nav_lock) = true;
               - component.update: s3_box_lcd
   # Touchscreen ir memory cancel
-  - platform: touchscreen
-    id: ts_ir_memory_cancel_button
+  - id: ts_ir_memory_cancel_button
+    platform: touchscreen
     internal: true
     x_min: 130
     x_max: 190
@@ -1077,8 +1097,8 @@ binary_sensor:
                   id(ir_memory_recording_codes).clear();
               - component.update: s3_box_lcd
   # Touchscreen ir blast button 1
-  - platform: touchscreen
-    id: ts_ir_blast_1_button
+  - id: ts_ir_blast_1_button
+    platform: touchscreen
     internal: true
     x_min: 40
     x_max: 88
@@ -1093,6 +1113,113 @@ binary_sensor:
               - script.execute: 
                   id: send_ir_code
                   buttonIndex: 0                  
+  # Touchscreen volume down
+  - id: settings_volume_down
+    platform: touchscreen
+    internal: true
+    x_min: 180
+    x_max: 210
+    y_min: 90
+    y_max: 120
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: return id(app_state) == ${APP_STATE_SETTINGS};
+            then:
+              - lambda: |-
+                  float volume = id(adf_media_player).volume;
+                  if (volume > 0.5) {
+                    volume -= 0.05;
+                    if (volume < 0.5)
+                      volume = 0.5;
+                    id(set_volume).execute(volume);
+                  }
+              - component.update: s3_box_lcd
+  # Touchscreen volume up
+  - id: settings_volume_up
+    platform: touchscreen
+    internal: true
+    x_min: 280
+    x_max: 310
+    y_min: 90
+    y_max: 120
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: return id(app_state) == ${APP_STATE_SETTINGS};
+            then:
+              - lambda: |-
+                  float volume = id(adf_media_player).volume;
+                  if (volume < 1) {
+                    volume += 0.05;
+                    if (volume > 1)
+                      volume = 1;
+                    id(set_volume).execute(volume);
+                  }
+              - component.update: s3_box_lcd
+  # Touchscreen sleep down
+  - id: settings_sleep_down
+    platform: touchscreen
+    internal: true
+    x_min: 180
+    x_max: 210
+    y_min: 130
+    y_max: 160
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: return id(app_state) == ${APP_STATE_SETTINGS};
+            then:
+              - lambda: |-
+                  ESP_LOGD("touchscreen", "sleep down");
+                  int sleep = id(mem_settings_sleep_delay).state - 5;
+                  if (sleep < 1) {
+                    sleep = 1;
+                  }
+                  auto call = id(mem_settings_sleep_delay).make_call();
+                  call.set_value(sleep);
+                  call.perform();
+              - component.update: s3_box_lcd
+  # Touchscreen sleep up
+  - id: settings_sleep_up
+    platform: touchscreen
+    internal: true
+    x_min: 280
+    x_max: 310
+    y_min: 130
+    y_max: 160
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: return id(app_state) == ${APP_STATE_SETTINGS};
+            then:
+              - lambda: |-
+                  ESP_LOGD("touchscreen", "sleep up");
+                  int sleep = id(mem_settings_sleep_delay).state + 5;
+                  auto call = id(mem_settings_sleep_delay).make_call();
+                  call.set_value(sleep);
+                  call.perform();
+              - component.update: s3_box_lcd
+  # Touchscreen mute toggle
+  - id: settings_mute
+    platform: touchscreen
+    internal: true
+    x_min: 220
+    x_max: 270
+    y_min: 50
+    y_max: 80
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: return id(app_state) == ${APP_STATE_SETTINGS};
+            then:
+              - lambda: id(va_mute).publish_state(!id(va_mute).state);
+              - component.update: s3_box_lcd              
 
 interval:
   - interval: 1s
@@ -1196,7 +1323,7 @@ interval:
             - lambda: |-
                 return id(app_state) != ${APP_STATE_LOADING} && 
                   id(radar_last_seen) > 0 && 
-                  (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay).state);
+                  (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_sleep_delay).state);
           then:
             - if:
                 condition:
@@ -1553,6 +1680,11 @@ display:
                 it.image((it.get_width() / 2), y, id(error_img), ImageAlign::TOP_CENTER);
                 break;
             }
+            
+            y += 68;
+            if (id(va_mute).state) {
+              it.print((it.get_width() / 2), y, id(font_icon_tiny), red, TextAlign::TOP_CENTER, "\U000F00AD");
+            }
           }
 
       - id: ir_learn_page
@@ -1664,7 +1796,7 @@ display:
           it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(mem_wake_word_engine_location).state.c_str());
 
           y += 15;
-          it.printf(x, y, id(font_small), white, "Speaker mode: %s", id(mem_va_speaker_mode).state.c_str());
+          it.printf(x, y, id(font_small), white, "Speaker muted: %s", (id(va_mute).state ? "true" : "false"));
 
           y += 15;
           std::string stateStr = "Unknown";
@@ -1722,6 +1854,29 @@ display:
             it.print(5, (240 - 5), id(font_icon_large), TextAlign::BOTTOM_LEFT, "\U000F004F");
             it.print((320 - 5), (240 - 5), id(font_icon_large), TextAlign::BOTTOM_RIGHT, "\U000F0056");
           }
+
+          int x = 15;
+          int y = 50;
+
+          it.print(x, y, id(font_medium), white, "VA muted:");
+          if (id(va_mute).state) {
+            it.print(x + 230, y - 8, id(font_icon_small), lime, TextAlign::TOP_CENTER, "\U000F0521");
+          } else {
+            it.print(x + 230, y - 8, id(font_icon_small), blue_dark, TextAlign::TOP_CENTER, "\U000F0A19");
+          }
+
+          y += 40;
+          int volume = (id(adf_media_player).volume - 0.499) * 200;
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "Volume:");
+          it.printf(x + 230, y, id(font_medium), white, TextAlign::TOP_CENTER, "%i%%", volume);
+          it.print(x + 180, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0375");
+          it.print(x + 280, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0416");
+
+          y += 40;
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "Sleep delay:");
+          it.printf(x + 230, y, id(font_medium), white, TextAlign::TOP_CENTER, "%is", (int)id(mem_settings_sleep_delay).state);
+          it.print(x + 180, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0375");
+          it.print(x + 280, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0416");
 
       - id: screen_saver_page
         lambda: |-
