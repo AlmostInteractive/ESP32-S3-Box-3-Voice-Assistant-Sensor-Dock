@@ -484,7 +484,7 @@ text_sensor:
     platform: template
 
 number:
-  - id: mem_settings_screen_saver_delay
+  - id: mem_settings_sleep_delay
     platform: template
     name: "Sleep Delay"
     icon: 'mdi:sleep'
@@ -868,6 +868,7 @@ script:
       volume: float
     then:
       - media_player.volume_set: !lambda 'return volume;' #for some reason, 0.5 is no volume
+
 button:
   - id: reboot
     platform: restart
@@ -1172,7 +1173,16 @@ binary_sensor:
             condition: 
               lambda: return id(app_state) == ${APP_STATE_SETTINGS};
             then:
-              - lambda: ESP_LOGD("touchscreen", "sleep down");
+              - lambda: |-
+                  ESP_LOGD("touchscreen", "sleep down");
+                  int sleep = id(mem_settings_sleep_delay).state - 5;
+                  if (sleep < 1) {
+                    sleep = 1;
+                  }
+                  auto call = id(mem_settings_sleep_delay).make_call();
+                  call.set_value(sleep);
+                  call.perform();
+              - component.update: s3_box_lcd
   # Touchscreen sleep up
   - id: settings_sleep_up
     platform: touchscreen
@@ -1187,7 +1197,13 @@ binary_sensor:
             condition: 
               lambda: return id(app_state) == ${APP_STATE_SETTINGS};
             then:
-              - lambda: ESP_LOGD("touchscreen", "sleep up");
+              - lambda: |-
+                  ESP_LOGD("touchscreen", "sleep up");
+                  int sleep = id(mem_settings_sleep_delay).state + 5;
+                  auto call = id(mem_settings_sleep_delay).make_call();
+                  call.set_value(sleep);
+                  call.perform();
+              - component.update: s3_box_lcd
   # Touchscreen mute toggle
   - id: settings_mute
     platform: touchscreen
@@ -1307,7 +1323,7 @@ interval:
             - lambda: |-
                 return id(app_state) != ${APP_STATE_LOADING} && 
                   id(radar_last_seen) > 0 && 
-                  (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_screen_saver_delay).state);
+                  (id(ha_time).now().timestamp - id(radar_last_seen) >= id(mem_settings_sleep_delay).state);
           then:
             - if:
                 condition:
@@ -1858,7 +1874,7 @@ display:
 
           y += 40;
           it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "Sleep delay:");
-          it.printf(x + 230, y, id(font_medium), white, TextAlign::TOP_CENTER, "%is", 100);
+          it.printf(x + 230, y, id(font_medium), white, TextAlign::TOP_CENTER, "%is", (int)id(mem_settings_sleep_delay).state);
           it.print(x + 180, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0375");
           it.print(x + 280, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0416");
 
