@@ -1,6 +1,6 @@
 # ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock
 
-This config integrates Voice Assistant with the S3 Box 3's sensor dock.  Full HA integration for everything actionable and adjustable on the device.
+This config integrates Voice Assistant with the S3 Box 3's sensor dock.  Full HA integration for everything actionable and adjustable on the device.  Top-left physical button turns on/off the screen (device remains fully active).  Bottom-left physical button resets the device.  Red circle touch button toggles Voice Assistant mute.  Top MUTE button will cause an unfixable error in the VA and the device must be reset to fix it, so don't touch that button.
 
 Features:
   - Voice assistant with on-device and in-HA wakeword
