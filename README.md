@@ -1,6 +1,6 @@
 # ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock
 
-This config integrates Voice Assistant with the S3 Box 3's sensor dock.
+This config integrates Voice Assistant with the S3 Box 3's sensor dock.  Full HA integration for everything actionable and adjustable on the device.
 
 Features:
   - Voice assistant with on-device and in-HA wakeword
