@@ -42,7 +42,7 @@ esphome:
       - component.update: s3_box_lcd
   project:
     name: "VoiceAsstantSensorDock.s3box"
-    version: "0.1.0"
+    version: "1.0.0"
 
 esp32:
   board: esp32s3box
