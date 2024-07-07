@@ -875,7 +875,7 @@ button:
     name: "Reboot"
   - id: ir_btn_1
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 1"
     on_press:
       then:
@@ -884,7 +884,7 @@ button:
             buttonIndex: 0
   - id: ir_btn_2
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 2"
     on_press:
       then:
@@ -893,7 +893,7 @@ button:
             buttonIndex: 1
   - id: ir_btn_3
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 3"
     on_press:
       then:
@@ -902,7 +902,7 @@ button:
             buttonIndex: 2
   - id: ir_btn_4
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 4"
     on_press:
       then:
