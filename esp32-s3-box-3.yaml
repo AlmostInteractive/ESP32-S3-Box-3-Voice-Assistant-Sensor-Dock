@@ -41,8 +41,8 @@ esphome:
       - display.page.show: loading_page
       - component.update: s3_box_lcd
   project:
-    name: "VoiceAsstantSensorDock.s3box"
-    version: "1.0.0"
+    name: "AlmostInteractive.VoiceAssistantSensorDock"
+    version: "1.0.1"
 
 esp32:
   board: esp32s3box
