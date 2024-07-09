@@ -17,6 +17,7 @@ substitutions:
   APP_STATE_VA: '4'
   APP_STATE_SETTINGS: '5'
   APP_STATE_SCREEN_SAVER: '6'
+  APP_STATE_TOUCHSCREEN_ERROR: '7'
   NUM_PAGES: '6'
 
   VA_STATE_NOT_READY: '1'
@@ -41,8 +42,8 @@ esphome:
       - display.page.show: loading_page
       - component.update: s3_box_lcd
   project:
-    name: "VoiceAsstantSensorDock.s3box"
-    version: "1.0.0"
+    name: "AlmostInteractive.VoiceAssistantSensorDock"
+    version: "1.0.1"
 
 esp32:
   board: esp32s3box
@@ -101,16 +102,14 @@ api:
     - component.update: s3_box_lcd
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
   ap:
     ssid: ${name}
     password: s3box123
   on_connect:
     - script.execute:
-        id: initialize
+        id: box_initialize
     - script.wait:
-        id: initialize
+        id: box_initialize
     - script.execute:
         id: change_app_state
         nextState: ${APP_STATE_STATUS}
@@ -148,13 +147,13 @@ i2c:
     scl_pullup_enabled: true
     frequency: 100kHz
 
-  - sda: GPIO41
+  - id: bus_b
+    sda: GPIO41
     scl: GPIO40
     scan: false
     sda_pullup_enabled: true
     scl_pullup_enabled: true
     frequency: 50kHz
-    id: bus_b
 
 i2s_audio:
   - id: i2s_shared
@@ -164,9 +163,9 @@ i2s_audio:
     access_mode: duplex
 
 adf_pipeline:
-  - platform: i2s_audio
+  - id: adf_i2s_out
+    platform: i2s_audio
     type: audio_out
-    id: adf_i2s_out
     i2s_audio_id: i2s_shared
     i2s_dout_pin: GPIO15
     adf_alc: false
@@ -178,10 +177,9 @@ adf_pipeline:
     sample_rate: 16000
     bits_per_sample: 16bit
     fixed_settings: true
-
-  - platform: i2s_audio
+  - id: adf_i2s_in
+    platform: i2s_audio
     type: audio_in
-    id: adf_i2s_in
     i2s_audio_id: i2s_shared
     i2s_din_pin: GPIO16
     pdm: false
@@ -689,7 +687,7 @@ globals:
     initial_value: 'false'
 
 script:
-  - id: initialize
+  - id: box_initialize
     then:
       - lambda: |-
           id(ir_memory_button_codes).resize(4, "");
@@ -875,7 +873,7 @@ button:
     name: "Reboot"
   - id: ir_btn_1
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 1"
     on_press:
       then:
@@ -884,7 +882,7 @@ button:
             buttonIndex: 0
   - id: ir_btn_2
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 2"
     on_press:
       then:
@@ -893,7 +891,7 @@ button:
             buttonIndex: 1
   - id: ir_btn_3
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 3"
     on_press:
       then:
@@ -902,7 +900,7 @@ button:
             buttonIndex: 2
   - id: ir_btn_4
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 4"
     on_press:
       then:
@@ -1586,17 +1584,17 @@ display:
           it.print((320 / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
           y += 42;
 
-          if (api::global_api_server->is_connected()) {
-            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
-          } else {
-            it.print(x, y, id(font_icon_small), red, "\U000F087B");
-          }
-          x += xinc;
-
           if (network::is_connected()) {
             it.print(x, y, id(font_icon_small), lime, "\U000F16BD");
           } else {
             it.print(x, y, id(font_icon_small), red, "\U000F16BC");
+          }
+          x += xinc;
+
+          if (api::global_api_server->is_connected()) {
+            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
+          } else {
+            it.print(x, y, id(font_icon_small), red, "\U000F087B");
           }
           x += xinc;
 
