@@ -106,9 +106,9 @@ wifi:
     password: s3box123
   on_connect:
     - script.execute:
-        id: initialize
+        id: box_initialize
     - script.wait:
-        id: initialize
+        id: box_initialize
     - script.execute:
         id: change_app_state
         nextState: ${APP_STATE_STATUS}
@@ -687,7 +687,7 @@ globals:
     initial_value: 'false'
 
 script:
-  - id: initialize
+  - id: box_initialize
     then:
       - lambda: |-
           id(ir_memory_button_codes).resize(4, "");
