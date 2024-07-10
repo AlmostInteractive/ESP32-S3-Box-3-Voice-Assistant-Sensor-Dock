@@ -17,6 +17,7 @@ substitutions:
   APP_STATE_VA: '4'
   APP_STATE_SETTINGS: '5'
   APP_STATE_SCREEN_SAVER: '6'
+  APP_STATE_TOUCHSCREEN_ERROR: '7'
   NUM_PAGES: '6'
 
   VA_STATE_NOT_READY: '1'
@@ -42,7 +43,7 @@ esphome:
       - component.update: s3_box_lcd
   project:
     name: "AlmostInteractive.VoiceAssistantSensorDock"
-    version: "1.0.1"
+    version: "1.1.0"
 
 esp32:
   board: esp32s3box
@@ -96,6 +97,7 @@ logger:
 api:
   id: my_api
   on_client_connected:
+    - script.execute: check_touchscreen_failure
     - component.update: s3_box_lcd
   on_client_disconnected:
     - component.update: s3_box_lcd
@@ -105,13 +107,17 @@ wifi:
     ssid: ${name}
     password: s3box123
   on_connect:
-    - script.execute:
-        id: box_initialize
-    - script.wait:
-        id: box_initialize
-    - script.execute:
-        id: change_app_state
-        nextState: ${APP_STATE_STATUS}
+    - script.execute: check_touchscreen_failure
+    - script.wait: check_touchscreen_failure
+    - if:
+        condition:
+          - lambda: return id(touchscreen_error_counter) < 0;
+        then:
+        - script.execute: box_initialize
+        - script.wait: box_initialize
+        - script.execute:
+            id: change_app_state
+            nextState: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -146,13 +152,13 @@ i2c:
     scl_pullup_enabled: true
     frequency: 100kHz
 
-  - sda: GPIO41
+  - id: bus_b
+    sda: GPIO41
     scl: GPIO40
     scan: false
     sda_pullup_enabled: true
     scl_pullup_enabled: true
     frequency: 50kHz
-    id: bus_b
 
 i2s_audio:
   - id: i2s_shared
@@ -162,9 +168,9 @@ i2s_audio:
     access_mode: duplex
 
 adf_pipeline:
-  - platform: i2s_audio
+  - id: adf_i2s_out
+    platform: i2s_audio
     type: audio_out
-    id: adf_i2s_out
     i2s_audio_id: i2s_shared
     i2s_dout_pin: GPIO15
     adf_alc: false
@@ -176,10 +182,9 @@ adf_pipeline:
     sample_rate: 16000
     bits_per_sample: 16bit
     fixed_settings: true
-
-  - platform: i2s_audio
+  - id: adf_i2s_in
+    platform: i2s_audio
     type: audio_in
-    id: adf_i2s_in
     i2s_audio_id: i2s_shared
     i2s_din_pin: GPIO16
     pdm: false
@@ -685,6 +690,14 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: touchscreen_error_counter
+    type: int
+    restore_value: false
+    initial_value: '-1'
+  - id: ignore_touchscreen_error
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 script:
   - id: box_initialize
@@ -758,6 +771,11 @@ script:
               break;
             case ${APP_STATE_SCREEN_SAVER}:
               id(s3_box_lcd).show_page(id(screen_saver_page));
+              break;
+            case ${APP_STATE_TOUCHSCREEN_ERROR}:
+              id(nav_lock) = true;
+              id(touchscreen_error_counter) = 10;
+              id(s3_box_lcd).show_page(id(touchscreen_error_page));
               break;
             default:
               ESP_LOGE("change_app_state", "Unknown state: %d", nextState);
@@ -866,6 +884,13 @@ script:
       volume: float
     then:
       - media_player.volume_set: !lambda 'return volume;' #for some reason, 0.5 is no volume
+  - id: check_touchscreen_failure
+    then:
+      - lambda:
+          if (!id(ignore_touchscreen_error) && id(gt911_touchscreen).is_failed() && id(touchscreen_error_counter) < 0) {
+            id(touchscreen_error_counter) = 10;
+            id(change_app_state).execute(${APP_STATE_TOUCHSCREEN_ERROR});
+          }
 
 button:
   - id: reboot
@@ -918,7 +943,15 @@ binary_sensor:
     name: Top Left Button
     entity_category: diagnostic
     on_press:
-      - light.toggle: led
+      - lambda: |-
+          if (id(touchscreen_error_counter) >= 0) {
+            id(ignore_touchscreen_error) = true;
+            id(touchscreen_error_counter) = -1;
+            id(nav_lock) = false;
+            id(change_app_state).execute(${APP_STATE_STATUS});
+          } else {
+            id(led).toggle();
+          }
   # red circle home button
   - platform: gt911
     name: "Home"
@@ -1333,6 +1366,16 @@ interval:
                   - script.execute: 
                       id: change_app_state
                       nextState: ${APP_STATE_SCREEN_SAVER}
+      - if:
+          condition:
+            - lambda: return !id(ignore_touchscreen_error) && id(touchscreen_error_counter) >= 0;
+          then:
+            - lambda: |-
+                id(touchscreen_error_counter)--;
+                if (id(touchscreen_error_counter) == 0) {
+                  id(reboot).press();
+                }
+            - component.update: s3_box_lcd
 
 remote_receiver:
   id: ir_rx
@@ -1584,17 +1627,17 @@ display:
           it.print((320 / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
           y += 42;
 
-          if (api::global_api_server->is_connected()) {
-            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
-          } else {
-            it.print(x, y, id(font_icon_small), red, "\U000F087B");
-          }
-          x += xinc;
-
           if (network::is_connected()) {
             it.print(x, y, id(font_icon_small), lime, "\U000F16BD");
           } else {
             it.print(x, y, id(font_icon_small), red, "\U000F16BC");
+          }
+          x += xinc;
+
+          if (api::global_api_server->is_connected()) {
+            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
+          } else {
+            it.print(x, y, id(font_icon_small), red, "\U000F087B");
           }
           x += xinc;
 
@@ -1899,3 +1942,25 @@ display:
               break;
           }
           it.print(320 / 2 - 52, 240 / 2, id(font_extra_large), grey_dark, TextAlign::CENTER_LEFT, output.c_str());
+
+      - id: touchscreen_error_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          
+          int x = 15;
+          int y = 15;
+          
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "The touchscreen failed to");
+          y += 25;
+
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "setup. The Box will reboot");
+          y += 25;
+
+          it.printf(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "in %i seconds.", id(touchscreen_error_counter));
+          y += 50;
+
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "To cancel the reboot, push");
+          y += 25;
+
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "the top-left button.");
+          y += 25;
