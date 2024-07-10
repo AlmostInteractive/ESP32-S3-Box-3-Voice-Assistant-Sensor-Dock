@@ -12,7 +12,7 @@ Features:
   - Battery sensor
   - Radar presence detection
 
-NB: This and similar configs seem to have an issue where the touchscreen _sometimes_ fails to initialize (write failure).  To cope with this, I've added a failure detection and failure state which will automatically reboot until the touchscreen initializes correctly.
+NB: This and similar configs seem to have an issue where the touchscreen _sometimes_ fails to initialize (write failure).  To cope with this, I've added a failure detection and failure state which will automatically reboot after 10 seconds until the touchscreen initializes correctly.  Pushing the top-left physical button during the countdown will cancel the reboot.
 
 ## Status Page
 ![status](https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/assets/3893631/946a43e4-8dcf-4b96-9e07-71952494b283)
