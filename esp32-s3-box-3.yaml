@@ -237,7 +237,8 @@ media_player:
             - media_player.stop: adf_media_player
 
 micro_wake_word:
-  model: ${micro_wake_word_model}
+  models:
+    - ${micro_wake_word_model}
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
