@@ -101,8 +101,6 @@ api:
     - component.update: s3_box_lcd
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
   ap:
     ssid: ${name}
     password: s3box123
