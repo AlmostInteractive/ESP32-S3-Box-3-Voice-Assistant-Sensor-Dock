@@ -1,14 +1,24 @@
 substitutions:
-  name: s3box3-voice-asst-sensor-dock
-  friendly_name: S3 Box 3 Voice Assistant Sensor Dock
+  name: s3box3-voice-asst-sd
+  friendly_name: S3 Box 3 Voice Assistant SD
   micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
 
+  # ----- Fill these in with the path to your local sound files.  Use HTTP as HTTPS can induce 2+ seconds of lag when playing.
+  wakeword_sound: 'http://192.168.100.10:8123/local/sounds/wakeword.mp3'
+  success_sound: 'http://192.168.100.10:8123/local/sounds/success.mp3'
+  error_sound: 'http://192.168.100.10:8123/local/sounds/error.mp3'
+
   # ----- don't mess with anything below this line -----
+  VERSION: '1.2.0'
   ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
   
   VA_IN_HOME_ASSISTANT: "In Home Assistant"
   VA_ON_DEVICE: "On device"
+
+  VA_SPEAKER_SPEECH: "Speech"
+  VA_SPEAKER_BEEP: "Beep"
+  VA_SPEAKER_MUTE: "Mute"
 
   APP_STATE_LOADING: '0'
   APP_STATE_STATUS: '1'
@@ -17,6 +27,7 @@ substitutions:
   APP_STATE_VA: '4'
   APP_STATE_SETTINGS: '5'
   APP_STATE_SCREEN_SAVER: '6'
+  APP_STATE_TOUCHSCREEN_ERROR: '7'
   NUM_PAGES: '6'
 
   VA_STATE_NOT_READY: '1'
@@ -30,6 +41,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  name_add_mac_suffix: true
   platformio_options:
     board_build.flash_mode: dio
   on_boot:
@@ -41,8 +53,8 @@ esphome:
       - display.page.show: loading_page
       - component.update: s3_box_lcd
   project:
-    name: "VoiceAsstantSensorDock.s3box"
-    version: "1.0.0"
+    name: "AlmostInteractive.VoiceAssistantSensorDock"
+    version: ${VERSION}
 
 esp32:
   board: esp32s3box
@@ -68,16 +80,13 @@ external_components:
     components: [ adf_pipeline, i2s_audio ]
     refresh: 0s
 
-dashboard_import:
-  package_import_url: github://AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/esp32-s3-box-3.yaml.yaml@master
-  import_full_config: true
-
 psram:
   mode: octal
   speed: 80MHz
 
 ota:
   - platform: esphome
+#    password: XXX
 
 logger:
   hardware_uart: USB_SERIAL_JTAG
@@ -95,23 +104,32 @@ logger:
 
 api:
   id: my_api
+#  encryption:
+#    key: XXX
   on_client_connected:
+    - script.execute: check_touchscreen_failure
     - component.update: s3_box_lcd
   on_client_disconnected:
     - component.update: s3_box_lcd
+
+captive_portal:
 
 wifi:
   ap:
     ssid: ${name}
     password: s3box123
   on_connect:
-    - script.execute:
-        id: initialize
-    - script.wait:
-        id: initialize
-    - script.execute:
-        id: change_app_state
-        nextState: ${APP_STATE_STATUS}
+    - script.execute: check_touchscreen_failure
+    - script.wait: check_touchscreen_failure
+    - if:
+        condition:
+          - lambda: return id(touchscreen_error_counter) < 0;
+        then:
+        - script.execute: box_initialize
+        - script.wait: box_initialize
+        - script.execute:
+            id: change_app_state
+            nextState: ${APP_STATE_STATUS}
   on_disconnect:
     - component.update: s3_box_lcd
 
@@ -146,13 +164,13 @@ i2c:
     scl_pullup_enabled: true
     frequency: 100kHz
 
-  - sda: GPIO41
+  - id: bus_b
+    sda: GPIO41
     scl: GPIO40
     scan: false
     sda_pullup_enabled: true
     scl_pullup_enabled: true
     frequency: 50kHz
-    id: bus_b
 
 i2s_audio:
   - id: i2s_shared
@@ -162,9 +180,9 @@ i2s_audio:
     access_mode: duplex
 
 adf_pipeline:
-  - platform: i2s_audio
+  - id: adf_i2s_out
+    platform: i2s_audio
     type: audio_out
-    id: adf_i2s_out
     i2s_audio_id: i2s_shared
     i2s_dout_pin: GPIO15
     adf_alc: false
@@ -176,10 +194,9 @@ adf_pipeline:
     sample_rate: 16000
     bits_per_sample: 16bit
     fixed_settings: true
-
-  - platform: i2s_audio
+  - id: adf_i2s_in
+    platform: i2s_audio
     type: audio_in
-    id: adf_i2s_in
     i2s_audio_id: i2s_shared
     i2s_din_pin: GPIO16
     pdm: false
@@ -224,15 +241,32 @@ media_player:
       - lambda: ESP_LOGD("media_player", "on_idle");
     on_announcement:
       - lambda: ESP_LOGD("media_player", "on_announcement");
-      - if:
-          condition:
-            - lambda: return id(va_mute).state;
-          then:
-            - media_player.stop: adf_media_player
 
 micro_wake_word:
-  model: ${micro_wake_word_model}
+  models:
+    - ${micro_wake_word_model}
   on_wake_word_detected:
+    - if:
+        condition:
+          lambda: return id(mem_va_speaker_mode).state != "${VA_SPEAKER_MUTE}";
+        then:
+          - media_player.play_media: ${wakeword_sound}
+          - wait_until:
+              condition:
+                not:
+                  media_player.is_idle
+              timeout: 2sec
+          - wait_until:
+              condition:
+                media_player.is_idle
+              timeout: 2sec
+    - if:
+        condition:
+          - lambda: return id(app_state) == ${APP_STATE_SCREEN_SAVER};
+        then:
+          - script.execute: 
+              id: change_app_state
+              nextState: ${APP_STATE_STATUS}
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
 
@@ -303,7 +337,16 @@ voice_assistant:
           - text_sensor.template.publish:
               id: va_response
               state: !lambda return message;
-          - delay: 3s
+          - if:
+              condition:
+                lambda: return id(mem_va_speaker_mode).state == "${VA_SPEAKER_BEEP}";
+              then:
+                - media_player.play_media: ${error_sound}
+                - wait_until:
+                    condition:
+                      media_player.is_idle
+                    timeout: 2sec
+          #- delay: 3s
           - script.execute:
               id: change_va_state
               nextState: ${VA_STATE_IDLE}
@@ -321,6 +364,29 @@ voice_assistant:
     - script.execute:
         id: change_va_state
         nextState: ${VA_STATE_REPLYING}
+    - if:
+        condition:
+          - lambda: return id(mem_va_speaker_mode).state != "${VA_SPEAKER_SPEECH}";
+        then:
+          - wait_until:
+              condition:
+                not:
+                  media_player.is_idle
+              timeout: 5sec
+          - media_player.stop: adf_media_player
+          - wait_until:
+              condition:
+                media_player.is_idle
+              timeout: 1sec
+          - if:
+              condition:
+                lambda: return id(mem_va_speaker_mode).state == "${VA_SPEAKER_BEEP}";
+              then:
+                - media_player.play_media: !lambda if(x.rfind("Sorry", 0) == 0) return "${error_sound}"; return "${success_sound}";
+                - wait_until:
+                    condition:
+                      media_player.is_idle
+                    timeout: 2sec
   on_end:
     - lambda: ESP_LOGD("voice_assistant_on", "on_end");
     - if:
@@ -331,7 +397,7 @@ voice_assistant:
               condition:
                 not:
                   voice_assistant.is_running
-              timeout: !lambda 'return id(va_mute).state ? 500 : 180000;' #ms
+              timeout: !lambda 'return id(mem_va_speaker_mode).state != "${VA_SPEAKER_SPEECH}" ? 500 : 180000;' #ms
           - micro_wake_word.start
     - script.execute:
         id: change_va_state
@@ -378,21 +444,6 @@ switch:
     on_turn_off: 
       then:
         - component.update: s3_box_lcd
-  - id: va_mute
-    platform: template
-    name: "Mute VA Speaker"
-    icon: 'mdi:volume-off'
-    entity_category: config
-    restore_mode: RESTORE_DEFAULT_OFF
-    optimistic: true
-    turn_on_action: 
-      then:
-        - delay: 250ms
-        - component.update: s3_box_lcd
-    turn_off_action: 
-      then:
-        - delay: 250ms
-        - component.update: s3_box_lcd
 
 select:
   - id: mem_wake_word_engine_location
@@ -427,6 +478,19 @@ select:
             - delay: 500ms
             - micro_wake_word.start
             - component.update: s3_box_lcd
+  - id: mem_va_speaker_mode
+    platform: template
+    entity_category: config
+    name: VA Speaker Mode
+    optimistic: true
+    restore_value: true
+    options:
+      - ${VA_SPEAKER_SPEECH}
+      - ${VA_SPEAKER_BEEP}
+      - ${VA_SPEAKER_MUTE}
+    on_value:
+      - delay: 250ms
+      - component.update: s3_box_lcd
 
 sensor:
   - platform: aht10 
@@ -516,7 +580,9 @@ font:
     id: font_icon_tiny
     size: 30
     glyphs: [
+      "\U000F009A",#bell
       "\U000F00AD",#block-helper
+      "\U000F01F2",#emoticon-outline
       "\U000F0375",#minus-box
       "\U000F0416",#plus-box
     ]
@@ -555,6 +621,9 @@ font:
       "\U000F0056",#arrow-right-bold-circle
       "\U000F0375",#minus-box
       "\U000F0416",#plus-box
+      "\U000F009A",#bell
+      "\U000F00AD",#block-helper
+      "\U000F01F2",#emoticon-outline
       ]
   - file: "https://github.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/raw/master/fonts/materialdesignicons-webfont.ttf"
     id: font_icon_large
@@ -685,9 +754,17 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: touchscreen_error_counter
+    type: int
+    restore_value: false
+    initial_value: '-1'
+  - id: ignore_touchscreen_error
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 script:
-  - id: initialize
+  - id: box_initialize
     then:
       - lambda: |-
           id(ir_memory_button_codes).resize(4, "");
@@ -758,6 +835,11 @@ script:
               break;
             case ${APP_STATE_SCREEN_SAVER}:
               id(s3_box_lcd).show_page(id(screen_saver_page));
+              break;
+            case ${APP_STATE_TOUCHSCREEN_ERROR}:
+              id(nav_lock) = true;
+              id(touchscreen_error_counter) = 10;
+              id(s3_box_lcd).show_page(id(touchscreen_error_page));
               break;
             default:
               ESP_LOGE("change_app_state", "Unknown state: %d", nextState);
@@ -866,6 +948,13 @@ script:
       volume: float
     then:
       - media_player.volume_set: !lambda 'return volume;' #for some reason, 0.5 is no volume
+  - id: check_touchscreen_failure
+    then:
+      - lambda:
+          if (!id(ignore_touchscreen_error) && id(gt911_touchscreen).is_failed() && id(touchscreen_error_counter) < 0) {
+            id(touchscreen_error_counter) = 10;
+            id(change_app_state).execute(${APP_STATE_TOUCHSCREEN_ERROR});
+          }
 
 button:
   - id: reboot
@@ -873,7 +962,7 @@ button:
     name: "Reboot"
   - id: ir_btn_1
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 1"
     on_press:
       then:
@@ -882,7 +971,7 @@ button:
             buttonIndex: 0
   - id: ir_btn_2
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 2"
     on_press:
       then:
@@ -891,7 +980,7 @@ button:
             buttonIndex: 1
   - id: ir_btn_3
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 3"
     on_press:
       then:
@@ -900,7 +989,7 @@ button:
             buttonIndex: 2
   - id: ir_btn_4
     platform: template
-    icon: 'mdi:led-variant-off'
+    icon: 'mdi:led-off'
     name: "IR Button 4"
     on_press:
       then:
@@ -918,15 +1007,23 @@ binary_sensor:
     name: Top Left Button
     entity_category: diagnostic
     on_press:
-      - light.toggle: led
+      - if:
+          condition:
+            - lambda: return id(touchscreen_error_counter) >= 0;
+          then:
+            - lambda: |-
+                id(ignore_touchscreen_error) = true;
+                id(touchscreen_error_counter) = -1;
+                id(nav_lock) = false;
+                id(change_app_state).execute(${APP_STATE_STATUS});
+          else:
+            - light.toggle: led
   # red circle home button
   - platform: gt911
     name: "Home"
     index: 0
     on_press:
-      - lambda: |-
-          ESP_LOGD("binary_sensor", "Red circle pressed");
-          id(va_mute).publish_state(!id(va_mute).state);
+      - select.next: mem_va_speaker_mode
       - component.update: s3_box_lcd
   # mute switch
   - platform: gpio
@@ -1216,7 +1313,7 @@ binary_sensor:
             condition: 
               lambda: return id(app_state) == ${APP_STATE_SETTINGS};
             then:
-              - lambda: id(va_mute).publish_state(!id(va_mute).state);
+              - select.next: mem_va_speaker_mode
               - component.update: s3_box_lcd              
 
 interval:
@@ -1333,6 +1430,16 @@ interval:
                   - script.execute: 
                       id: change_app_state
                       nextState: ${APP_STATE_SCREEN_SAVER}
+      - if:
+          condition:
+            - lambda: return !id(ignore_touchscreen_error) && id(touchscreen_error_counter) >= 0;
+          then:
+            - lambda: |-
+                id(touchscreen_error_counter)--;
+                if (id(touchscreen_error_counter) == 0) {
+                  id(reboot).press();
+                }
+            - component.update: s3_box_lcd
 
 remote_receiver:
   id: ir_rx
@@ -1584,17 +1691,17 @@ display:
           it.print((320 / 2), 0, id(font_large), yellow, TextAlign::TOP_CENTER, "- Status -");
           y += 42;
 
-          if (api::global_api_server->is_connected()) {
-            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
-          } else {
-            it.print(x, y, id(font_icon_small), red, "\U000F087B");
-          }
-          x += xinc;
-
           if (network::is_connected()) {
             it.print(x, y, id(font_icon_small), lime, "\U000F16BD");
           } else {
             it.print(x, y, id(font_icon_small), red, "\U000F16BC");
+          }
+          x += xinc;
+
+          if (api::global_api_server->is_connected()) {
+            it.print(x, y, id(font_icon_small), blue, "\U000F07D0");
+          } else {
+            it.print(x, y, id(font_icon_small), red, "\U000F087B");
           }
           x += xinc;
 
@@ -1680,8 +1787,10 @@ display:
             }
             
             y += 68;
-            if (id(va_mute).state) {
+            if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_MUTE") {
               it.print((it.get_width() / 2), y, id(font_icon_tiny), red, TextAlign::TOP_CENTER, "\U000F00AD");
+            } else if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_BEEP") {
+              it.print((it.get_width() / 2), y, id(font_icon_tiny), yellow, TextAlign::TOP_CENTER, "\U000F009A");
             }
           }
 
@@ -1794,7 +1903,7 @@ display:
           it.printf(x, y, id(font_small), white, "Wake word engine: %s", id(mem_wake_word_engine_location).state.c_str());
 
           y += 15;
-          it.printf(x, y, id(font_small), white, "Speaker muted: %s", (id(va_mute).state ? "true" : "false"));
+          it.printf(x, y, id(font_small), white, "Speaker mode: %s", id(mem_va_speaker_mode).state.c_str());
 
           y += 15;
           std::string stateStr = "Unknown";
@@ -1856,11 +1965,13 @@ display:
           int x = 15;
           int y = 50;
 
-          it.print(x, y, id(font_medium), white, "VA muted:");
-          if (id(va_mute).state) {
-            it.print(x + 230, y - 8, id(font_icon_small), lime, TextAlign::TOP_CENTER, "\U000F0521");
+          it.print(x, y, id(font_medium), white, "VA Speaker:");
+          if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_SPEECH}") {
+            it.print(x + 230, y - 8, id(font_icon_small), lime, TextAlign::TOP_CENTER, "\U000F01F2");
+          } else if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_BEEP}") {
+            it.print(x + 230, y - 8, id(font_icon_small), yellow, TextAlign::TOP_CENTER, "\U000F009A");
           } else {
-            it.print(x + 230, y - 8, id(font_icon_small), blue_dark, TextAlign::TOP_CENTER, "\U000F0A19");
+            it.print(x + 230, y - 8, id(font_icon_small), red, TextAlign::TOP_CENTER, "\U000F00AD");
           }
 
           y += 40;
@@ -1899,3 +2010,25 @@ display:
               break;
           }
           it.print(320 / 2 - 52, 240 / 2, id(font_extra_large), grey_dark, TextAlign::CENTER_LEFT, output.c_str());
+
+      - id: touchscreen_error_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          
+          int x = 15;
+          int y = 15;
+          
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "The touchscreen failed to");
+          y += 25;
+
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "setup. The Box will reboot");
+          y += 25;
+
+          it.printf(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "in %i seconds.", id(touchscreen_error_counter));
+          y += 50;
+
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "To cancel the reboot, push");
+          y += 25;
+
+          it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "the top-left button.");
+          y += 25;
