@@ -4,7 +4,7 @@ This config integrates Voice Assistant with the S3 Box 3's sensor dock.  Full HA
 
 Features:
   - Voice assistant with on-device and in-HA wakeword
-  - Mute VA speech (settings page and red-circle button)
+  - Three VA response modes: Speech, Beeps, and Mute (settings page and red-circle button)
   - Touchscreen
   - IR learning
   - IR blasting
