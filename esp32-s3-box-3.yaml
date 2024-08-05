@@ -581,6 +581,7 @@ font:
     size: 30
     glyphs: [
       "\U000F009A",#bell
+      "\U000F009C",#bell-outline
       "\U000F00AD",#block-helper
       "\U000F01F2",#emoticon-outline
       "\U000F0375",#minus-box
