@@ -4,13 +4,17 @@ substitutions:
   micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
 
-  # ----- Fill these in with the path to your local sound files.  Use HTTP as HTTPS can induce 2+ seconds of lag when playing.
+  # ----- TODO: Fill these in with your device's values
+  ota_password: "XXX"
+  encryption_key: "XXX"
+
+  # ----- TODO: Fill these in with the path to your local sound files.  Use HTTP as HTTPS can induce 2+ seconds of lag when playing.
   wakeword_sound: 'http://192.168.100.10:8123/local/sounds/wakeword.mp3'
   success_sound: 'http://192.168.100.10:8123/local/sounds/success.mp3'
   error_sound: 'http://192.168.100.10:8123/local/sounds/error.mp3'
 
   # ----- don't mess with anything below this line -----
-  VERSION: '1.2.0'
+  VERSION: '1.2.1'
   ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
   
   VA_IN_HOME_ASSISTANT: "In Home Assistant"
@@ -86,7 +90,7 @@ psram:
 
 ota:
   - platform: esphome
-#    password: XXX
+    password: ${ota_password}
 
 logger:
   hardware_uart: USB_SERIAL_JTAG
@@ -104,8 +108,8 @@ logger:
 
 api:
   id: my_api
-#  encryption:
-#    key: XXX
+  encryption:
+    key: ${encryption_key}
   on_client_connected:
     - script.execute: check_touchscreen_failure
     - component.update: s3_box_lcd
@@ -115,6 +119,8 @@ api:
 captive_portal:
 
 wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
   ap:
     ssid: ${name}
     password: s3box123
