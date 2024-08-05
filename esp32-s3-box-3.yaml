@@ -1787,10 +1787,10 @@ display:
             }
             
             y += 68;
-            if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_MUTE") {
-              it.print((it.get_width() / 2), y, id(font_icon_tiny), red, TextAlign::TOP_CENTER, "\U000F00AD");
-            } else if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_BEEP") {
-              it.print((it.get_width() / 2), y, id(font_icon_tiny), yellow, TextAlign::TOP_CENTER, "\U000F009A");
+            if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_MUTE}") {
+              it.print((it.get_width() / 2) + 1, y, id(font_icon_tiny), red, TextAlign::TOP_CENTER, "\U000F00AD");
+            } else if (id(mem_va_speaker_mode).state == "${VA_SPEAKER_BEEP}") {
+              it.print((it.get_width() / 2) + 1, y, id(font_icon_tiny), yellow, TextAlign::TOP_CENTER, "\U000F009C");
             }
           }
 
