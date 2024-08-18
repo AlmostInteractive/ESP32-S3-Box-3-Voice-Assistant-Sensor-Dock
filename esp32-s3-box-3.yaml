@@ -45,7 +45,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  name_add_mac_suffix: true
+  name_add_mac_suffix: false
   platformio_options:
     board_build.flash_mode: dio
   on_boot:
@@ -230,7 +230,7 @@ media_player:
     internal: false
     keep_pipeline_alive: true
     announcement_audio:
-      sample_rate: 24000
+      sample_rate: 16000
       bits_per_sample: 16
       num_channels: 1
     pipeline:
