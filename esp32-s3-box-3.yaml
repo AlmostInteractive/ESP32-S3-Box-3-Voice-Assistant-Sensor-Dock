@@ -230,7 +230,7 @@ media_player:
     internal: false
     keep_pipeline_alive: true
     announcement_audio:
-      sample_rate: 16000
+      sample_rate: 24000
       bits_per_sample: 16
       num_channels: 1
     pipeline:
