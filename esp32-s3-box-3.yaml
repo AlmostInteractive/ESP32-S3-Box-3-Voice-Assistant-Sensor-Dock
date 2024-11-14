@@ -1663,6 +1663,7 @@ display:
     id: s3_box_lcd
     model: S3BOX
     data_rate: 40MHz
+    invert_colors: false
     cs_pin: 5
     dc_pin: 4
     reset_pin:
