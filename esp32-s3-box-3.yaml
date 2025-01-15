@@ -1,16 +1,21 @@
+# Search for "TODO" and adjust as necessary
 substitutions:
   name: s3box3-voice-asst-sd
   friendly_name: S3 Box 3 Voice Assistant SD
   micro_wake_word_model: hey_jarvis  # options: okay_nabu, hey_jarvis, alexa
   noise_suppression_level: '3'
 
-  # ----- Fill these in with the path to your local sound files.  Use HTTP as HTTPS can induce 2+ seconds of lag when playing.
+  # ----- TODO: Fill these in with your device's values
+  ota_password: "XXX"
+  encryption_key: "XXX"
+
+  # ----- TODO: Fill these in with the path to your local sound files.  Use HTTP as HTTPS can induce 2+ seconds of lag when playing.
   wakeword_sound: 'http://192.168.100.10:8123/local/sounds/wakeword.mp3'
   success_sound: 'http://192.168.100.10:8123/local/sounds/success.mp3'
   error_sound: 'http://192.168.100.10:8123/local/sounds/error.mp3'
 
-  # ----- don't mess with anything below this line -----
-  VERSION: '1.2.0'
+  # ----- don't mess with anything below this line (except, optionally, the TODOs) -----
+  VERSION: '1.2.2'
   ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћ"
   
   VA_IN_HOME_ASSISTANT: "In Home Assistant"
@@ -61,6 +66,8 @@ esp32:
   flash_size: 16MB
   framework:
     type: esp-idf
+    version: 4.4.5
+    platform_version: 5.4.0
     sdkconfig_options:
       CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
       CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
@@ -86,7 +93,7 @@ psram:
 
 ota:
   - platform: esphome
-#    password: XXX
+#    password: ${ota_password}
 
 logger:
   hardware_uart: USB_SERIAL_JTAG
@@ -104,8 +111,8 @@ logger:
 
 api:
   id: my_api
-#  encryption:
-#    key: XXX
+    # encryption:
+    # key: XXX
   on_client_connected:
     - script.execute: check_touchscreen_failure
     - component.update: s3_box_lcd
@@ -115,6 +122,8 @@ api:
 captive_portal:
 
 wifi:
+  # TODO: uncomment to use stored secrets. ssid: !secret wifi_ssid
+  # TODO: uncomment to use stored secrets. password: !secret wifi_password
   ap:
     ssid: ${name}
     password: s3box123
