@@ -15,7 +15,7 @@ substitutions:
   error_sound: 'http://192.168.100.10:8123/local/sounds/error.mp3'
 
   # ----- don't mess with anything below this line (except, optionally, the TODOs) -----
-  VERSION: '1.2.2'
+  VERSION: '1.3.0'
   ALLOWED_CHARACTERS: " !#%\"'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћ"
   
   VA_IN_HOME_ASSISTANT: "In Home Assistant"
@@ -46,9 +46,8 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  min_version: 2025.2.0
   name_add_mac_suffix: true
-  platformio_options:
-    board_build.flash_mode: dio
   on_boot:
     priority: 600
     then:
@@ -66,26 +65,10 @@ esp32:
   flash_size: 16MB
   framework:
     type: esp-idf
-    version: 4.4.5
-    platform_version: 5.4.0
     sdkconfig_options:
       CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
       CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
-      CONFIG_AUDIO_BOARD_CUSTOM: "y"
-      CONFIG_ESP32_S3_BOX_3_BOARD: "y"
-    components:
-      - name: esp32_s3_box_3_board
-        source: github://jesserockz/esp32-s3-box-3-board@main
-        refresh: 0s
-
-external_components:
-  - source:
-      type: git
-      url: https://github.com/gnumpi/esphome_audio
-      ref: dev-next
-    components: [ adf_pipeline, i2s_audio ]
-    refresh: 0s
 
 psram:
   mode: octal
@@ -106,8 +89,6 @@ logger:
     esp_adf_pipeline: WARN
     esp_audio_processors: WARN
     esp_audio_sources: WARN
-    adf_media_player: WARN
-    adf_audio_element: WARN
 
 api:
   id: my_api
@@ -155,14 +136,16 @@ light:
   - platform: monochromatic
     id: led
     name: 'LCD Screen'
+    icon: 'mdi:television'
     entity_category: config
     output: backlight_output
     restore_mode: RESTORE_DEFAULT_ON
     default_transition_length: 500ms
 
 spi:
-  clk_pin: 7
-  mosi_pin: 6
+  - id: spi_bus
+    clk_pin: 7
+    mosi_pin: 6
 
 i2c:
   - id: bus_a
@@ -182,64 +165,53 @@ i2c:
     frequency: 50kHz
 
 i2s_audio:
-  - id: i2s_shared
+  - id: i2s_audio_bus
     i2s_lrclk_pin: GPIO45
     i2s_bclk_pin: GPIO17
     i2s_mclk_pin: GPIO2
-    access_mode: duplex
 
-adf_pipeline:
-  - id: adf_i2s_out
-    platform: i2s_audio
-    type: audio_out
-    i2s_audio_id: i2s_shared
-    i2s_dout_pin: GPIO15
-    adf_alc: false
-    dac:
-      i2c_id: bus_a
-      model: es8311
-      address: 0x18
-      enable_pin: GPIO46
-    sample_rate: 16000
+audio_adc:
+  - id: es7210_adc
+    platform: es7210
+    i2c_id: bus_a
     bits_per_sample: 16bit
-    fixed_settings: true
-  - id: adf_i2s_in
-    platform: i2s_audio
-    type: audio_in
-    i2s_audio_id: i2s_shared
-    i2s_din_pin: GPIO16
-    pdm: false
-    adc:
-      i2c_id: bus_a
-      model: es7210
-      address: 0x40
     sample_rate: 16000
+
+audio_dac:
+  - id: es8311_dac
+    platform: es8311
+    i2c_id: bus_a
     bits_per_sample: 16bit
-    fixed_settings: true
+    sample_rate: 48000
 
 microphone:
-  - platform: adf_pipeline
-    id: mic
-    keep_pipeline_alive: true
-    pipeline:
-      - adf_i2s_in
-      - resampler
-      - self
+  - platform: i2s_audio
+    id: box_mic
+    sample_rate: 16000
+    i2s_din_pin: GPIO16
+    bits_per_sample: 16bit
+    adc_type: external
+
+speaker:
+  - platform: i2s_audio
+    id: box_speaker
+    i2s_dout_pin: GPIO15
+    dac_type: external
+    sample_rate: 48000
+    bits_per_sample: 16bit
+    channel: left
+    audio_dac: es8311_dac
+    buffer_duration: 100ms
 
 media_player:
-  - platform: adf_pipeline
-    id: adf_media_player
+  - id: speaker_media_player
+    platform: speaker
     name: "S3 Box 3 Media Player"
-    internal: false
-    keep_pipeline_alive: true
-    announcement_audio:
-      sample_rate: 24000
-      bits_per_sample: 16
-      num_channels: 1
-    pipeline:
-      - self
-      - resampler
-      - adf_i2s_out
+    announcement_pipeline:
+      speaker: box_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1  # S3 Box only has one output channel
     on_state:
       - lambda: ESP_LOGD("media_player", "on_state");
     on_play:
@@ -281,9 +253,8 @@ micro_wake_word:
 
 voice_assistant:
   id: va
-  microphone: mic
-  media_player: adf_media_player
-  use_wake_word: true
+  microphone: box_mic
+  media_player: speaker_media_player
   noise_suppression_level: ${noise_suppression_level}
   auto_gain: 31dBFS
   volume_multiplier: 4.0
@@ -382,7 +353,8 @@ voice_assistant:
                 not:
                   media_player.is_idle
               timeout: 5sec
-          - media_player.stop: adf_media_player
+          - media_player.stop:
+              announcement: true
           - wait_until:
               condition:
                 media_player.is_idle
@@ -646,32 +618,32 @@ font:
 image:
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/notready.png"
     id: notready_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/error.png"
     id: error_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/idle.png"
     id: idle_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/listening.png"
     id: listening_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/thinking.png"
     id: thinking_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/replying.png"
     id: replying_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
   - file: "https://raw.githubusercontent.com/AlmostInteractive/ESP32-S3-Box-3-Voice-Assistant-Sensor-Dock/master/images/loading.png"
     id: loading_img
-    type: RGB24
-    use_transparency: true
+    type: RGB
+    transparency: alpha_channel
 
 color:
   - id: green
@@ -1029,14 +1001,16 @@ binary_sensor:
           else:
             - light.toggle: led
   # red circle home button
-  - platform: gt911
+  - id: home
+    platform: gt911
     name: "Home"
     index: 0
     on_press:
       - select.next: mem_va_speaker_mode
       - component.update: s3_box_lcd
   # mute switch
-  - platform: gpio
+  - id: mute
+    platform: gpio
     name: "Mute"
     pin:
       number: GPIO1
@@ -1233,7 +1207,7 @@ binary_sensor:
               lambda: return id(app_state) == ${APP_STATE_SETTINGS};
             then:
               - lambda: |-
-                  float volume = id(adf_media_player).volume;
+                  float volume = id(speaker_media_player).volume;
                   if (volume > 0.5) {
                     volume -= 0.05;
                     if (volume < 0.5)
@@ -1256,7 +1230,7 @@ binary_sensor:
               lambda: return id(app_state) == ${APP_STATE_SETTINGS};
             then:
               - lambda: |-
-                  float volume = id(adf_media_player).volume;
+                  float volume = id(speaker_media_player).volume;
                   if (volume < 1) {
                     volume += 0.05;
                     if (volume > 1)
@@ -1457,8 +1431,6 @@ remote_receiver:
     number: 38
     inverted: true
   dump: all
-  rmt_channel: 4
-  memory_blocks: 4
   on_pronto:
     then:
       - if:
@@ -1665,14 +1637,13 @@ remote_transmitter:
     number: 39
     inverted: false
   carrier_duty_percent: 50%
-  rmt_channel: 0
 
 display:
   - platform: ili9xxx
     id: s3_box_lcd
     model: S3BOX
-    data_rate: 40MHz
     invert_colors: false
+    data_rate: 40MHz
     cs_pin: 5
     dc_pin: 4
     reset_pin:
@@ -1986,7 +1957,7 @@ display:
           }
 
           y += 40;
-          int volume = (id(adf_media_player).volume - 0.499) * 200;
+          int volume = (id(speaker_media_player).volume - 0.499) * 200;
           it.print(x, y, id(font_medium), white, TextAlign::TOP_LEFT, "Volume:");
           it.printf(x + 230, y, id(font_medium), white, TextAlign::TOP_CENTER, "%i%%", volume);
           it.print(x + 180, y, id(font_icon_tiny), blue_light, TextAlign::TOP_CENTER, "\U000F0375");
