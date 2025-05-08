@@ -1192,23 +1192,6 @@ binary_sensor:
               - script.execute: 
                   id: send_ir_code
                   buttonIndex: 0
-  # Touchscreen ir blast button 1
-  - id: ts_ir_blast_1_button
-    platform: touchscreen
-    internal: true
-    x_min: 40
-    x_max: 88
-    y_min: 66
-    y_max: 114
-    on_press:
-      then:
-        - if:
-            condition: 
-              lambda: return id(app_state) == ${APP_STATE_IR_BLAST} && id(enable_ir).state;
-            then:
-              - script.execute: 
-                  id: send_ir_code
-                  buttonIndex: 0
   # Touchscreen ir blast button 2
   - id: ts_ir_blast_2_button
     platform: touchscreen
